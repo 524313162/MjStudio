@@ -1,0 +1,141 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "manju/prop",
+      "images": [
+        "65",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "62": {
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "63": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "65": {
+    "inputs": {
+      "samples": [
+        "70",
+        0
+      ],
+      "vae": [
+        "63",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "66": {
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "67": {
+    "inputs": {
+      "text": "道具双视图设定图：单张横向排版（16:9），白底背景，柔和影棚光，高细节，8K。\n版式约定：画面分为左右两区，左侧展示道具正面视图，右侧展示道具侧面视图（绕竖直轴旋转约90度视角）；两图等宽、垂直居中、间距均匀，两个视图的道具整体比例一致、细节一致。\n道具外观（以资产文件为准，跨集不得漂移）：\n道具名：{道具名}。\n形状/颜色/材质：{资产-道具形状颜色材质}。\n关键细节：{资产-道具关键细节}。\n\n美术风格：{立项-美术风格}。{风格锚点：日本2D手绘动画电影美术风格，赛璐璐平涂上色，清晰深色描边线稿，扁平色块阴影，高饱和明快色彩，非写实、非照片、非3D渲染、非厚涂}\n画质：高清8K，细节丰富，造型准确，无人物、无文字、无额外边框。",
+      "clip": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "68": {
+    "inputs": {
+      "width": 1472,
+      "height": 832,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "69": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "66",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "70": {
+    "inputs": {
+      "seed": 42,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "69",
+        0
+      ],
+      "positive": [
+        "67",
+        0
+      ],
+      "negative": [
+        "71",
+        0
+      ],
+      "latent_image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "71": {
+    "inputs": {
+      "text": "写实风格，真人，照片质感，3D渲染，CGI，厚涂油画，肌理笔触，体积感过强，电影实拍感，人物入镜，动物入镜，左右视图互相融合，区域分隔消失，左右道具不一致，形状不一致，颜色不一致，材质不一致，图案不一致，多余物体，畸形，透视错误，比例失调，背景复杂，场景杂物，桌面杂物，地面投影，强阴影，逆光，低清晰度，模糊，低质量，文字，字幕，logo，边框，分格",
+      "clip": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  }
+}

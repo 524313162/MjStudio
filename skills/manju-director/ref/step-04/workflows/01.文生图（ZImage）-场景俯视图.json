@@ -1,0 +1,141 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "manju/scene",
+      "images": [
+        "65",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "62": {
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "63": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "65": {
+    "inputs": {
+      "samples": [
+        "70",
+        0
+      ],
+      "vae": [
+        "63",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "66": {
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "67": {
+    "inputs": {
+      "text": "场景正常平视视角全景（eye-level normal human perspective view, NOT top-down/aerial/bird's eye view/low-angle/oblique/isometric），以人眼正常站立高度平视观察{场景名}的空间全貌，完整展示空间结构与家具布局。\n空间结构：{资产-空间形状与墙门窗位置}。\n布局（以资产文件布局为准，逐摆件摆放，保持人眼平视的透视关系）：{资产-布局逐摆件相对位置}。\n关键特征：标志物为{资产-标志物}；时间光照为{资产-时间光照特征}（从平视角度以自然明暗体现）。\n美术风格：{立项-美术风格}。{风格锚点：日本2D手绘动画电影美术风格，赛璐璐平涂上色，清晰深色描边线稿，扁平色块阴影，高饱和明快色彩，非写实、非照片、非3D渲染、非厚涂}，平视全景构图，家具比例协调、位置关系准确，画面干净整洁。\n画幅：横向16:9构图。\n画质：高清8K，细节丰富，无人物、无文字、无额外边框。",
+      "clip": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "68": {
+    "inputs": {
+      "width": 1472,
+      "height": 832,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "69": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "66",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "70": {
+    "inputs": {
+      "seed": 42,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "69",
+        0
+      ],
+      "positive": [
+        "67",
+        0
+      ],
+      "negative": [
+        "71",
+        0
+      ],
+      "latent_image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "71": {
+    "inputs": {
+      "text": "俯视视角，俯拍，航拍视角，鸟瞰图，顶视图，天顶视角，仰视视角，低角度仰拍，写实风格，真人，照片质感，3D渲染，CGI，厚涂油画，肌理笔触，体积感过强，电影实拍感，人物入镜，动物入镜，透视错误，斜45度视角，轴测图，半俯视半平视，多视角混合，墙壁倒塌，家具悬浮，家具重叠错位，家具比例失调，布局错乱，摆件位置漂移，强阴影，逆光，昏暗，低清晰度，模糊，畸形，低质量，文字，字幕，logo，边框，分格",
+      "clip": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  }
+}

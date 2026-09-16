@@ -1,0 +1,80 @@
+{
+  "1": {
+    "inputs": {
+      "audio": "青蛙妈妈_种子.wav"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "① 声音A（目标音色，5秒即可）"
+    }
+  },
+  "2": {
+    "inputs": {
+      "audio": "video3_提取音频2.wav"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "② 内容音频B（30秒完整内容）"
+    }
+  },
+  "3": {
+    "inputs": {
+      "model_version": "Fun-CosyVoice3-0.5B",
+      "download_source": "HuggingFace",
+      "device": "auto",
+      "force_redownload": false,
+      "force_reload": false
+    },
+    "class_type": "FL_CosyVoice3_ModelLoader",
+    "_meta": {
+      "title": "FL CosyVoice3 Model Loader"
+    }
+  },
+  "4": {
+    "inputs": {
+      "speed": 1,
+      "seed": 1148147928,
+      "model": [
+        "3",
+        0
+      ],
+      "source_audio": [
+        "2",
+        0
+      ],
+      "target_audio": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "FL_CosyVoice3_VoiceConversion",
+    "_meta": {
+      "title": "③ 声音转换（输出C，时长=内容B）"
+    }
+  },
+  "5": {
+    "inputs": {
+      "audio": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "PreviewAudio",
+    "_meta": {
+      "title": "预览 C"
+    }
+  },
+  "6": {
+    "inputs": {
+      "filename_prefix": "audio",
+      "audio": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "SaveAudio",
+    "_meta": {
+      "title": "保存 C"
+    }
+  }
+}

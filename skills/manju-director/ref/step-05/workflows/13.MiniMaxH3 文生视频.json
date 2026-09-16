@@ -1,0 +1,245 @@
+{
+  "92": {
+    "inputs": {
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "auto",
+      "codec": "auto",
+      "video": [
+        "105:91",
+        0
+      ]
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "保存视频"
+    }
+  },
+  "115": {
+    "inputs": {
+      "aspect_ratio": "16:9 (Widescreen)",
+      "megapixels": 0.1,
+      "multiple": 24
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "分辨率选择器"
+    }
+  },
+  "105:11": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "105:24": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "105:23": {
+    "inputs": {
+      "samples": [
+        "105:14",
+        0
+      ],
+      "vae": [
+        "105:24",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "105:10": {
+    "inputs": {
+      "samples": [
+        "105:14",
+        0
+      ],
+      "vae": [
+        "105:11",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "105:17": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "105:9": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 20,
+      "denoise": 1,
+      "model": [
+        "105:6",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
+  },
+  "105:14": {
+    "inputs": {
+      "noise": [
+        "105:15",
+        0
+      ],
+      "guider": [
+        "105:16",
+        0
+      ],
+      "sampler": [
+        "105:17",
+        0
+      ],
+      "sigmas": [
+        "105:9",
+        0
+      ],
+      "latent_image": [
+        "105:104",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "105:16": {
+    "inputs": {
+      "model": [
+        "105:6",
+        0
+      ],
+      "conditioning": [
+        "105:104",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "105:6": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "105:13": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "105:15": {
+    "inputs": {
+      "noise_seed": 733615919797274
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "105:91": {
+    "inputs": {
+      "fps": 24,
+      "bit_depth": 8,
+      "images": [
+        "105:10",
+        0
+      ],
+      "audio": [
+        "105:23",
+        0
+      ]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "创建视频"
+    }
+  },
+  "105:104": {
+    "inputs": {
+      "prompt": "**Realistic live-action cinematic look, character self-introduction short**: practical film photography style, dusk city rooftop, anamorphic lens, shallow depth of field, film grain, city dusk haze, restrained premium grading, natural fluid character performance.\n\n**Scene overview**: At dusk, the male protagonist Xiaoming stands on the rooftop of a skyscraper, the tower cluster and the city skyline fading into dusk behind him, the evening breeze catching the hem of his coat. He faces the camera, relaxed and at ease, gaze calm, introducing himself to the audience in a casual, everyday tone — like a candidly captured real moment.\n\n**Storyboard (each shot its own scene, natural cuts)**:\n\n- [0s-1s] Shot 1 · Medium: Xiaoming facing the camera on the rooftop, the city behind him blurred into bokeh, he slightly lifts his head toward the lens, about to speak.\n- [1s-4.5s] Shot 2・Close-up: He naturally delivers the line in Chinese, \"我是小明，我的名字叫小明，很高兴认识你。\" (I'm Xiaoming. My name is Xiaoming. Nice to meet you.) Tone plain and sincere, a slight natural smile at the corner of his mouth, steady gaze, moderate unhurried pace, zero sense of acting.\n- [4.5s-5s] Shot 3 · Slightly angled medium: He pauses briefly after speaking, wind sweeping through his hair, expression relaxed, the shot closing naturally.\n\n**Character tone (key)**: Normal everyday speaking tone — voice calm and warm, natural and relaxed, sincere and easygoing; moderate, unhurried pace; a touch of a natural smile, like chatting with an old friend; no announcer-style delivery, no exaggerated emotion, no pauses or stumbles; lip-sync fully matched to the line.\n\n**Camera**: Each shot its own angle; slight handheld sway or a slow push-in while he speaks, shallow depth of field focusing on the face for realism; no flashy camera moves.\n\n**Audio**: Xiaoming speaks the line \"我是小明，我的名字叫小明，很高兴认识你\" in a natural everyday tone (Chinese); ambient sound of rooftop wind and distant city noise; a low, restrained score underneath.\n\n**Constraints**: No text, subtitles or logos of any kind; no animation or cartoon rendering; no overly-CG look, keep the live-action texture; lip-sync accurate.",
+      "width": [
+        "115",
+        0
+      ],
+      "height": [
+        "115",
+        1
+      ],
+      "length": [
+        "105:107",
+        1
+      ],
+      "clip": [
+        "105:13",
+        0
+      ],
+      "vae": [
+        "105:11",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3ImageToVideo",
+    "_meta": {
+      "title": "MiniMax H3 Image to Video"
+    }
+  },
+  "105:107": {
+    "inputs": {
+      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+      "values.a": [
+        "105:111",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "105:111": {
+    "inputs": {
+      "value": 5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Float (duration)"
+    }
+  }
+}
