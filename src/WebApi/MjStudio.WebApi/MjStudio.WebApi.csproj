@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Application\MjStudio.Application\MjStudio.Application.csproj" />
+    <ProjectReference Include="..\..\Application\MjStudio.Application.Shared\MjStudio.Application.Shared.csproj" />
+    <ProjectReference Include="..\..\Domain\MjStudio.Domain\MjStudio.Domain.csproj" />
+    <ProjectReference Include="..\..\Domain\MjStudio.Domain.Shared\MjStudio.Domain.Shared.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\MjStudio.Infrastructure\MjStudio.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="10.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

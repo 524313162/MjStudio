@@ -1,0 +1,58 @@
+{
+  "1": {
+    "inputs": {
+      "audio": "zero_shot_prompt.wav"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "加载音频"
+    }
+  },
+  "2": {
+    "inputs": {
+      "model_version": "Fun-CosyVoice3-0.5B",
+      "download_source": "HuggingFace",
+      "device": "auto",
+      "force_redownload": false,
+      "force_reload": false
+    },
+    "class_type": "FL_CosyVoice3_ModelLoader",
+    "_meta": {
+      "title": "FL CosyVoice3 Model Loader"
+    }
+  },
+  "3": {
+    "inputs": {
+      "text": "今天天气真好，我们一起去公园玩吧！",
+      "instruct_text": "请用四川话，非常开心地说一句话。",
+      "speed": 1,
+      "seed": 42,
+      "text_frontend": true,
+      "model": [
+        "2",
+        0
+      ],
+      "reference_audio": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "FL_CosyVoice3_Instruct2",
+    "_meta": {
+      "title": "FL CosyVoice3 Instruct2"
+    }
+  },
+  "4": {
+    "inputs": {
+      "audio": [
+        "3",
+        0
+      ],
+      "filename_prefix": "manju_dub"
+    },
+    "class_type": "SaveAudio",
+    "_meta": {
+      "title": "保存音频"
+    }
+  }
+}

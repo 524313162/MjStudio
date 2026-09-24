@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Domain\MjStudio.Domain\MjStudio.Domain.csproj" />
+    <ProjectReference Include="..\..\Domain\MjStudio.Domain.Shared\MjStudio.Domain.Shared.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\MjStudio.Infrastructure\MjStudio.Infrastructure.csproj" />
+    <ProjectReference Include="..\MjStudio.Application.Shared\MjStudio.Application.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

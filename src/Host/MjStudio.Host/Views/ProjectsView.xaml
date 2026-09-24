@@ -1,0 +1,561 @@
+<UserControl x:Class="MjStudio.Host.Views.ProjectsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hc="https://handyorg.github.io/handycontrol">
+        <Grid>
+                <!-- ===== 主内容区：卡片网格 ===== -->
+                <DockPanel>
+                        <!-- 顶部：搜索 + 新建项目 -->
+                        <Border DockPanel.Dock="Top"
+                                Style="{StaticResource Card}"
+                                Padding="16"
+                                Margin="0,0,0,16">
+                                <Grid>
+                                        <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="240"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="🔍"
+                                                   FontSize="14"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                        <hc:TextBox Grid.Column="1"
+                                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                    hc:InfoElement.Placeholder="搜索项目（名称 / 故事名）"
+                                                    FontSize="13"/>
+                                        <Button Grid.Column="2"
+                                                Content="搜索"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Command="{Binding SearchCommand}"
+                                                FontSize="13"
+                                                Padding="14,7"
+                                                Margin="8,0,0,0"/>
+                                        <Button Grid.Column="4"
+                                                Content="＋ 新建项目"
+                                                Style="{StaticResource PrimaryButton}"
+                                                Command="{Binding CreateCommand}"
+                                                FontSize="13"
+                                                Padding="16,7"/>
+                                </Grid>
+                        </Border>
+
+                        <!-- 卡片网格 -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <Grid>
+                                        <!-- 空状态 -->
+                                        <StackPanel VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"
+                                                    Visibility="{Binding FilteredCards.Count, Converter={StaticResource CountToVis}}">
+                                                <TextBlock Text="📁"
+                                                           FontSize="48"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,0,0,12"/>
+                                                <TextBlock Text="暂无项目，点击右上角「新建项目」创建"
+                                                           Style="{StaticResource EmptyHint}"/>
+                                        </StackPanel>
+
+                                        <!-- 卡片列表 -->
+                                        <ItemsControl ItemsSource="{Binding FilteredCards}">
+                                                <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                                <WrapPanel/>
+                                                        </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                                <Border Background="White"
+                                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="12"
+                                                                        Width="300"
+                                                                        Margin="0,0,16,16"
+                                                                        Cursor="Hand"
+                                                                        MouseLeftButtonDown="OnCardClick">
+                                                                        <Border.Effect>
+                                                                                <DropShadowEffect BlurRadius="12"
+                                                                                                  ShadowDepth="2"
+                                                                                                  Opacity="0.08"
+                                                                                                  Color="#000000"/>
+                                                                        </Border.Effect>
+                                                                        <Border.Style>
+                                                                                <Style TargetType="Border">
+                                                                                        <Style.Triggers>
+                                                                                                <Trigger Property="IsMouseOver"
+                                                                                                         Value="True">
+                                                                                                        <Setter Property="BorderBrush"
+                                                                                                                Value="{StaticResource PrimaryBrush}"/>
+                                                                                                        <Setter Property="Background"
+                                                                                                                Value="{StaticResource PrimaryLightBrush}"/>
+                                                                                                </Trigger>
+                                                                                        </Style.Triggers>
+                                                                                </Style>
+                                                                        </Border.Style>
+
+                                                                        <StackPanel>
+                                                                                <!-- 顶部强调条 -->
+                                                                                <Border Height="4"
+                                                                                        CornerRadius="12,12,0,0"
+                                                                                        Background="{StaticResource PrimaryBrush}"/>
+
+                                                                                <!-- 内容区 -->
+                                                                                <Border Padding="18,14,18,16">
+                                                                                        <StackPanel>
+                                                                                                <!-- 名称 + 当前标记 -->
+                                                                                                <StackPanel Orientation="Horizontal"
+                                                                                                            Margin="0,0,0,6">
+                                                                                                        <TextBlock Text="{Binding Name}"
+                                                                                                                   FontSize="17"
+                                                                                                                   FontWeight="Bold"
+                                                                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                                                   MaxWidth="200"/>
+                                                                                                        <Border Background="{StaticResource PrimaryBrush}"
+                                                                                                                CornerRadius="4"
+                                                                                                                Padding="6,2"
+                                                                                                                Margin="8,0,0,0"
+                                                                                                                VerticalAlignment="Center">
+                                                                                                                <Border.Visibility>
+                                                                                                                        <MultiBinding Converter="{StaticResource MultiEqVis}">
+                                                                                                                                <Binding Path="Name"/>
+                                                                                                                                <Binding Path="DataContext.CurrentProjectName"
+                                                                                                                                         RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                                                                                        </MultiBinding>
+                                                                                                                </Border.Visibility>
+                                                                                                                <TextBlock Text="当前"
+                                                                                                                           FontSize="10"
+                                                                                                                           Foreground="White"/>
+                                                                                                        </Border>
+                                                                                                </StackPanel>
+
+                                                                                                <!-- 故事名称 -->
+                                                                                                <TextBlock Text="{Binding StoryName, TargetNullValue='未命名', FallbackValue='未命名'}"
+                                                                                                           FontSize="13"
+                                                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                                                           TextTrimming="CharacterEllipsis"
+                                                                                                           Margin="0,0,0,12"/>
+
+                                                                                                <!-- 标签行 -->
+                                                                                                <StackPanel Orientation="Horizontal"
+                                                                                                            Margin="0,0,0,12">
+                                                                                                        <Border Background="{StaticResource PageBgBrush}"
+                                                                                                                CornerRadius="4"
+                                                                                                                Padding="8,3"
+                                                                                                                Margin="0,0,6,0">
+                                                                                                                <TextBlock Text="{Binding Genre, TargetNullValue='未分类', FallbackValue='未分类'}"
+                                                                                                                           FontSize="11"
+                                                                                                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                                                                        </Border>
+                                                                                                        <Border Background="{StaticResource PageBgBrush}"
+                                                                                                                CornerRadius="4"
+                                                                                                                Padding="8,3">
+                                                                                                                <TextBlock Text="{Binding TargetPlatform, TargetNullValue='未定', FallbackValue='未定'}"
+                                                                                                                           FontSize="11"
+                                                                                                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                                                                        </Border>
+                                                                                                </StackPanel>
+
+                                                                                                <!-- 分隔线 -->
+                                                                                                <Border Height="1"
+                                                                                                        Background="{StaticResource BorderBrush}"
+                                                                                                        Margin="0,0,0,12"/>
+
+                                                                                                <!-- 底部：环节 + 集数 -->
+                                                                                                <StackPanel Orientation="Horizontal"
+                                                                                                            Margin="0,0,0,14">
+                                                                                                        <Border Background="{StaticResource PrimaryLightBrush}"
+                                                                                                                CornerRadius="4"
+                                                                                                                Padding="8,3"
+                                                                                                                Margin="0,0,10,0">
+                                                                                                                <TextBlock Text="{Binding CurrentStage, Converter={StaticResource EnumDisplay}}"
+                                                                                                                           FontSize="11"
+                                                                                                                           Foreground="{StaticResource PrimaryBrush}"
+                                                                                                                           FontWeight="SemiBold"/>
+                                                                                                        </Border>
+                                                                                                        <TextBlock Text="{Binding TotalEpisodes, StringFormat='{}{0} 集'}"
+                                                                                                                   FontSize="12"
+                                                                                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                                                                                   VerticalAlignment="Center"/>
+                                                                                                </StackPanel>
+
+                                                                                                <!-- 创作入口：剧本创作（左）+ 漫剧创作（右） -->
+                                                                                                <Grid>
+                                                                                                        <Grid.ColumnDefinitions>
+                                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                                <ColumnDefinition Width="8"/>
+                                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                        </Grid.ColumnDefinitions>
+                                                                                                        <Button Grid.Column="0"
+                                                                                                                Content="📝 剧本创作"
+                                                                                                                Style="{StaticResource SecondaryButton}"
+                                                                                                                FontSize="12"
+                                                                                                                Padding="0,7"
+                                                                                                                Command="{Binding DataContext.OpenStoryCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                                                CommandParameter="{Binding}"/>
+                                                                                                        <Button Grid.Column="2"
+                                                                                                                Content="🎬 漫剧创作"
+                                                                                                                Style="{StaticResource PrimaryButton}"
+                                                                                                                FontSize="12"
+                                                                                                                Padding="0,7"
+                                                                                                                Command="{Binding DataContext.OpenShotsCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                                                CommandParameter="{Binding}"/>
+                                                                                                </Grid>
+                                                                                        </StackPanel>
+                                                                                </Border>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                        </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                </Grid>
+                        </ScrollViewer>
+                </DockPanel>
+
+                <!-- ===== 右侧抽屉 ===== -->
+                <Grid x:Name="DrawerRoot"
+                      Visibility="Collapsed">
+                        <!-- 遮罩层（点击关闭） -->
+                        <Border x:Name="DrawerMask"
+                                Background="#66000000"
+                                MouseLeftButtonDown="OnDrawerMaskClick"/>
+
+                        <!-- 抽屉面板 -->
+                        <Border x:Name="DrawerPanel"
+                                HorizontalAlignment="Right"
+                                Width="600"
+                                Background="White">
+                                <Border.Effect>
+                                        <DropShadowEffect BlurRadius="28"
+                                                          ShadowDepth="0"
+                                                          Opacity="0.22"
+                                                          Color="#1A202C"/>
+                                </Border.Effect>
+                                <DockPanel>
+                                        <!-- 抽屉头部 -->
+                                        <Border DockPanel.Dock="Top"
+                                                Padding="24,16"
+                                                BorderBrush="{StaticResource BorderBrush}"
+                                                BorderThickness="0,0,0,1">
+                                                <DockPanel>
+                                                        <Button DockPanel.Dock="Right"
+                                                                Content="✕"
+                                                                Style="{StaticResource SecondaryButton}"
+                                                                Command="{Binding CloseDrawerCommand}"
+                                                                Padding="8,4"
+                                                                FontSize="14"/>
+                                                        <StackPanel>
+                                                                <TextBlock Text="项目详情"
+                                                                           FontSize="18"
+                                                                           FontWeight="Bold"
+                                                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                <TextBlock Text="{Binding SelectedProject.Name}"
+                                                                           FontSize="13"
+                                                                           Foreground="{StaticResource PrimaryBrush}"
+                                                                           Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                </DockPanel>
+                                        </Border>
+
+                                        <!-- 底部操作栏 -->
+                                        <Border DockPanel.Dock="Bottom"
+                                                Padding="24,14"
+                                                Background="White"
+                                                BorderBrush="{StaticResource BorderBrush}"
+                                                BorderThickness="0,1,0,0">
+                                                <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Right">
+                                                        <Button Content="🗑 删除项目"
+                                                                Style="{StaticResource DangerButton}"
+                                                                Command="{Binding DeleteCommand}"
+                                                                FontSize="13"
+                                                                Margin="0,0,12,0"/>
+                                                        <Button Content="💾 保存"
+                                                                Style="{StaticResource PrimaryButton}"
+                                                                Command="{Binding SaveCommand}"
+                                                                FontSize="13"/>
+                                                </StackPanel>
+                                        </Border>
+
+                                        <!-- 表单内容 -->
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <StackPanel Margin="24">
+                                                        <!-- 基本信息 -->
+                                                        <StackPanel Margin="0,0,0,20">
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Margin="0,0,0,14">
+                                                                        <Border Width="3"
+                                                                                Height="14"
+                                                                                CornerRadius="2"
+                                                                                Background="{StaticResource PrimaryBrush}"
+                                                                                VerticalAlignment="Center"
+                                                                                Margin="0,0,8,0"/>
+                                                                        <TextBlock Text="基本信息"
+                                                                                   FontSize="14"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                </StackPanel>
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="故事名称"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:TextBox Text="{Binding FormStoryName, UpdateSourceTrigger=PropertyChanged}"
+                                                                                            hc:InfoElement.Placeholder="故事名称"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="项目简介"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:TextBox Text="{Binding FormDescription, UpdateSourceTrigger=PropertyChanged}"
+                                                                                            AcceptsReturn="True"
+                                                                                            Height="40"
+                                                                                            VerticalScrollBarVisibility="Auto"
+                                                                                            VerticalContentAlignment="Top"
+                                                                                            hc:InfoElement.Placeholder="一句话介绍项目"/>
+                                                                        </StackPanel>
+                                                                </Grid>
+                                                                <TextBlock Text="世界观（一句话）"
+                                                                           Style="{StaticResource FieldLabel}"
+                                                                           Margin="0,12,0,4"/>
+                                                                <hc:TextBox Text="{Binding FormWorldview, UpdateSourceTrigger=PropertyChanged}"
+                                                                            AcceptsReturn="True"
+                                                                            Height="48"
+                                                                            VerticalScrollBarVisibility="Auto"
+                                                                            VerticalContentAlignment="Top"
+                                                                            hc:InfoElement.Placeholder="世界观"/>
+                                                                <Grid Margin="0,12,0,0">
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="项目状态"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding StatusOptions}"
+                                                                                             SelectedItem="{Binding FormStatus}"
+                                                                                             VerticalAlignment="Center">
+                                                                                        <hc:ComboBox.ItemTemplate>
+                                                                                                <DataTemplate>
+                                                                                                        <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                                                                                                </DataTemplate>
+                                                                                        </hc:ComboBox.ItemTemplate>
+                                                                                </hc:ComboBox>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="流程环节"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <Border Background="{StaticResource PageBgBrush}"
+                                                                                        CornerRadius="4"
+                                                                                        Padding="10,7"
+                                                                                        VerticalAlignment="Center">
+                                                                                        <TextBlock Text="{Binding SelectedProject.CurrentStage, Converter={StaticResource EnumDisplay}}"
+                                                                                                   FontSize="13"
+                                                                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                                                </Border>
+                                                                        </StackPanel>
+                                                                </Grid>
+                                                                <TextBlock Text="已完结的项目不能再被资产绑定（资产引用项目时会过滤掉已完结项目）"
+                                                                           FontSize="12"
+                                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                                           Margin="0,6,0,0"/>
+                                                        </StackPanel>
+                                                        <Border Height="1"
+                                                                Background="{StaticResource BorderBrush}"
+                                                                Margin="0,0,0,20"/>
+
+                                                        <!-- 制作设定 -->
+                                                        <StackPanel Margin="0,0,0,20">
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Margin="0,0,0,14">
+                                                                        <Border Width="3"
+                                                                                Height="14"
+                                                                                CornerRadius="2"
+                                                                                Background="{StaticResource PrimaryBrush}"
+                                                                                VerticalAlignment="Center"
+                                                                                Margin="0,0,8,0"/>
+                                                                        <TextBlock Text="制作设定"
+                                                                                   FontSize="14"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                </StackPanel>
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="总集数"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:TextBox Text="{Binding FormTotalEpisodes, UpdateSourceTrigger=PropertyChanged}"
+                                                                                            hc:InfoElement.Placeholder="如 20"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="每集时长（秒）"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:TextBox Text="{Binding FormEpisodeDuration, UpdateSourceTrigger=PropertyChanged}"
+                                                                                            hc:InfoElement.Placeholder="如 120"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="4">
+                                                                                <TextBlock Text="画幅"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding AspectRatios}"
+                                                                                             SelectedItem="{Binding FormAspectRatio}"
+                                                                                             VerticalAlignment="Center">
+                                                                                        <hc:ComboBox.ItemTemplate>
+                                                                                                <DataTemplate>
+                                                                                                        <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                                                                                                </DataTemplate>
+                                                                                        </hc:ComboBox.ItemTemplate>
+                                                                                </hc:ComboBox>
+                                                                        </StackPanel>
+                                                                </Grid>
+
+                                                                <Grid Margin="0,12,0,0">
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="目标平台"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding PlatformOptions}"
+                                                                                             SelectedItem="{Binding FormTargetPlatform}"
+                                                                                             VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="题材"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding GenreOptions}"
+                                                                                             SelectedItem="{Binding FormGenre}"
+                                                                                             VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="4">
+                                                                                <TextBlock Text="目标受众"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding AudienceOptions}"
+                                                                                             SelectedItem="{Binding FormAudience}"
+                                                                                             VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                </Grid>
+
+                                                                <Grid Margin="0,12,0,0">
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="美术风格"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding ArtStyleOptions}"
+                                                                                             SelectedItem="{Binding FormArtStyle}"
+                                                                                             IsEditable="True"
+                                                                                             VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="配音语言"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding VoiceLanguageOptions}"
+                                                                                             SelectedItem="{Binding FormVoiceLanguage}"
+                                                                                             VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                </Grid>
+
+                                                                <Grid Margin="0,12,0,0">
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="原创/改编"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:ComboBox ItemsSource="{Binding OriginalOrAdaptedOptions}"
+                                                                                             SelectedItem="{Binding FormOriginalOrAdapted}"
+                                                                                             VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="BGM 风格"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:TextBox Text="{Binding FormBgmStyle, UpdateSourceTrigger=PropertyChanged}"
+                                                                                            hc:InfoElement.Placeholder="如 轻快/悬疑"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="4">
+                                                                                <TextBlock Text="片头片尾"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <CheckBox Content="含片头片尾"
+                                                                                          IsChecked="{Binding FormHasOpeningEnding}"
+                                                                                          VerticalAlignment="Center"
+                                                                                          Margin="0,8,0,0"/>
+                                                                        </StackPanel>
+                                                                </Grid>
+                                                        </StackPanel>
+                                                </StackPanel>
+                                        </ScrollViewer>
+                                </DockPanel>
+                        </Border>
+                </Grid>
+
+                <!-- ===== 新建项目弹窗 ===== -->
+                <Grid x:Name="CreateDialogRoot"
+                      Visibility="Collapsed">
+                        <Border x:Name="CreateDialogMask"
+                                Background="#66000000"
+                                MouseLeftButtonDown="OnDialogMaskClick"/>
+                        <Border x:Name="CreateDialogPanel"
+                                Width="400"
+                                Background="White"
+                                CornerRadius="14"
+                                Padding="28,24"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                                <Border.Effect>
+                                        <DropShadowEffect BlurRadius="28"
+                                                          ShadowDepth="0"
+                                                          Opacity="0.25"
+                                                          Color="#1A202C"/>
+                                </Border.Effect>
+                                <StackPanel>
+                                        <TextBlock Text="新建项目"
+                                                   FontSize="17"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="输入项目名，将自动创建项目数据库与资源目录"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   Margin="0,6,0,16"
+                                                   TextWrapping="Wrap"/>
+                                        <hc:TextBox x:Name="NewNameBox"
+                                                    Text="{Binding NewProjectName, UpdateSourceTrigger=PropertyChanged}"
+                                                    hc:InfoElement.Placeholder="如：我的漫剧"/>
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Right"
+                                                    Margin="0,20,0,0">
+                                                <Button Content="取消"
+                                                        Style="{StaticResource SecondaryButton}"
+                                                        Command="{Binding CancelCreateCommand}"
+                                                        Margin="0,0,10,0"/>
+                                                <Button Content="创建"
+                                                        Style="{StaticResource PrimaryButton}"
+                                                        Command="{Binding ConfirmCreateCommand}"/>
+                                        </StackPanel>
+                                </StackPanel>
+                        </Border>
+                </Grid>
+        </Grid>
+</UserControl>

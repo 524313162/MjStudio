@@ -1,0 +1,224 @@
+﻿<Application x:Class="MjStudio.Host.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:local="clr-namespace:MjStudio.Host"
+             xmlns:conv="clr-namespace:MjStudio.Host.Converters">
+        <Application.Resources>
+                <ResourceDictionary>
+                        <ResourceDictionary.MergedDictionaries>
+                                <!-- HandyControl 主题（默认浅色） -->
+                                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml"/>
+                                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml"/>
+                        </ResourceDictionary.MergedDictionaries>
+
+                        <!-- ==================== 转换器 ==================== -->
+                        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+                        <conv:InverseBoolConverter x:Key="InverseBool"/>
+                        <conv:EnumDisplayConverter x:Key="EnumDisplay"/>
+                        <conv:NullableEnumDisplayConverter x:Key="NullableEnumDisplay"/>
+                        <conv:NullToVisibilityConverter x:Key="NullToVis"/>
+                        <conv:NullToVisibilityInverseConverter x:Key="NullToVisInverse"/>
+                        <conv:CountToVisibilityConverter x:Key="CountToVis"/>
+                        <conv:EditModeTextConverter x:Key="EditModeText"/>
+                        <conv:BoolToTextConverter x:Key="BoolToText"/>
+                        <conv:CharCountConverter x:Key="CharCount"/>
+                        <conv:MultiStringEqualsToVisibilityConverter x:Key="MultiEqVis"/>
+                        <conv:RefProjectsConverter x:Key="RefProjects"/>
+                        <conv:ImagePathConverter x:Key="ImagePath"/>
+
+                        <!-- ==================== 品牌色 ==================== -->
+                        <SolidColorBrush x:Key="PrimaryBrush"
+                                         Color="#4F6EF7"/>
+                        <SolidColorBrush x:Key="PrimaryHoverBrush"
+                                         Color="#3B5BDB"/>
+                        <SolidColorBrush x:Key="PrimaryLightBrush"
+                                         Color="#EBF0FF"/>
+                        <SolidColorBrush x:Key="DangerBrush"
+                                         Color="#E53E3E"/>
+                        <SolidColorBrush x:Key="DangerHoverBrush"
+                                         Color="#C53030"/>
+                        <SolidColorBrush x:Key="SuccessBrush"
+                                         Color="#38A169"/>
+                        <SolidColorBrush x:Key="WarningBrush"
+                                         Color="#D69E2E"/>
+                        <SolidColorBrush x:Key="TextPrimaryBrush"
+                                         Color="#1A202C"/>
+                        <SolidColorBrush x:Key="TextSecondaryBrush"
+                                         Color="#4A5568"/>
+                        <SolidColorBrush x:Key="TextMutedBrush"
+                                         Color="#A0AEC0"/>
+                        <SolidColorBrush x:Key="BorderBrush"
+                                         Color="#E2E8F0"/>
+                        <SolidColorBrush x:Key="CardBgBrush"
+                                         Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="PageBgBrush"
+                                         Color="#F7F8FA"/>
+                        <SolidColorBrush x:Key="SidebarBgBrush"
+                                         Color="#1A1F2E"/>
+                        <SolidColorBrush x:Key="SidebarHoverBrush"
+                                         Color="#252B3D"/>
+                        <SolidColorBrush x:Key="SidebarActiveBrush"
+                                         Color="#2D3548"/>
+
+                        <!-- ==================== 卡片容器 ==================== -->
+                        <Style x:Key="Card"
+                               TargetType="Border">
+                                <Setter Property="Background"
+                                        Value="{StaticResource CardBgBrush}"/>
+                                <Setter Property="BorderBrush"
+                                        Value="{StaticResource BorderBrush}"/>
+                                <Setter Property="BorderThickness"
+                                        Value="1"/>
+                                <Setter Property="CornerRadius"
+                                        Value="10"/>
+                                <Setter Property="Padding"
+                                        Value="20"/>
+                        </Style>
+
+                        <!-- ==================== 表单标签 ==================== -->
+                        <Style x:Key="FieldLabel"
+                               TargetType="TextBlock">
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource TextMutedBrush}"/>
+                                <Setter Property="FontSize"
+                                        Value="12"/>
+                                <Setter Property="FontWeight"
+                                        Value="Medium"/>
+                                <Setter Property="Margin"
+                                        Value="0,0,0,4"/>
+                        </Style>
+
+                        <!-- ==================== 页面标题 ==================== -->
+                        <Style x:Key="PageTitle"
+                               TargetType="TextBlock">
+                                <Setter Property="FontSize"
+                                        Value="20"/>
+                                <Setter Property="FontWeight"
+                                        Value="Bold"/>
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource TextPrimaryBrush}"/>
+                                <Setter Property="Margin"
+                                        Value="0,0,0,16"/>
+                        </Style>
+
+                        <!-- ==================== 分区标题 ==================== -->
+                        <Style x:Key="SectionTitle"
+                               TargetType="TextBlock">
+                                <Setter Property="FontSize"
+                                        Value="15"/>
+                                <Setter Property="FontWeight"
+                                        Value="SemiBold"/>
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource TextPrimaryBrush}"/>
+                                <Setter Property="Margin"
+                                        Value="0,0,0,10"/>
+                        </Style>
+
+                        <!-- ==================== 提示词区块 ==================== -->
+                        <Style x:Key="PromptBlock"
+                               TargetType="Border">
+                                <Setter Property="Background"
+                                        Value="#F5F8FC"/>
+                                <Setter Property="CornerRadius"
+                                        Value="6"/>
+                                <Setter Property="Padding"
+                                        Value="12"/>
+                                <Setter Property="Margin"
+                                        Value="0,4,0,10"/>
+                        </Style>
+
+                        <!-- ==================== 空状态提示 ==================== -->
+                        <Style x:Key="EmptyHint"
+                               TargetType="TextBlock">
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource TextMutedBrush}"/>
+                                <Setter Property="FontSize"
+                                        Value="14"/>
+                                <Setter Property="HorizontalAlignment"
+                                        Value="Center"/>
+                                <Setter Property="VerticalAlignment"
+                                        Value="Center"/>
+                        </Style>
+
+                        <!-- ==================== 主按钮（HandyControl 风格） ==================== -->
+                        <Style x:Key="PrimaryButton"
+                               TargetType="Button"
+                               BasedOn="{StaticResource ButtonPrimary}">
+                                <Setter Property="FontSize"
+                                        Value="13"/>
+                                <Setter Property="Padding"
+                                        Value="16,7"/>
+                                <Setter Property="Cursor"
+                                        Value="Hand"/>
+                        </Style>
+
+                        <!-- ==================== 次要按钮 ==================== -->
+                        <Style x:Key="SecondaryButton"
+                               TargetType="Button"
+                               BasedOn="{StaticResource ButtonDefault}">
+                                <Setter Property="FontSize"
+                                        Value="13"/>
+                                <Setter Property="Padding"
+                                        Value="14,7"/>
+                                <Setter Property="Cursor"
+                                        Value="Hand"/>
+                        </Style>
+
+                        <!-- ==================== 危险按钮 ==================== -->
+                        <Style x:Key="DangerButton"
+                               TargetType="Button"
+                               BasedOn="{StaticResource ButtonDanger}">
+                                <Setter Property="FontSize"
+                                        Value="13"/>
+                                <Setter Property="Padding"
+                                        Value="14,7"/>
+                                <Setter Property="Cursor"
+                                        Value="Hand"/>
+                        </Style>
+
+                        <!-- ==================== 幽灵按钮（侧边栏用） ==================== -->
+                        <Style x:Key="NavButton"
+                               TargetType="Button">
+                                <Setter Property="Background"
+                                        Value="Transparent"/>
+                                <Setter Property="Foreground"
+                                        Value="#A0AEC0"/>
+                                <Setter Property="FontSize"
+                                        Value="14"/>
+                                <Setter Property="Padding"
+                                        Value="16,11"/>
+                                <Setter Property="BorderThickness"
+                                        Value="0"/>
+                                <Setter Property="Cursor"
+                                        Value="Hand"/>
+                                <Setter Property="HorizontalContentAlignment"
+                                        Value="Left"/>
+                                <Setter Property="Template">
+                                        <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="bd"
+                                                                Background="{TemplateBinding Background}"
+                                                                CornerRadius="8"
+                                                                Margin="8,1"
+                                                                Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                                  VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver"
+                                                                         Value="True">
+                                                                        <Setter TargetName="bd"
+                                                                                Property="Background"
+                                                                                Value="{StaticResource SidebarHoverBrush}"/>
+                                                                        <Setter Property="Foreground"
+                                                                                Value="White"/>
+                                                                </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                        </Setter.Value>
+                                </Setter>
+                        </Style>
+                </ResourceDictionary>
+        </Application.Resources>
+</Application>

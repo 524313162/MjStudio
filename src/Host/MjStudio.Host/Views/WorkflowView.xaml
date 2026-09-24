@@ -1,0 +1,200 @@
+<UserControl x:Class="MjStudio.Host.Views.WorkflowView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hc="https://handyorg.github.io/handycontrol">
+        <Grid>
+                <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ===== 左：工作流列表 ===== -->
+                <Border Grid.Column="0"
+                        Style="{StaticResource Card}"
+                        Padding="12"
+                        Margin="0,0,16,0">
+                        <DockPanel>
+                                <StackPanel DockPanel.Dock="Top"
+                                            Orientation="Horizontal"
+                                            Margin="4,4,4,8">
+                                        <TextBlock Text="工作流模板"
+                                                   Style="{StaticResource SectionTitle}"
+                                                   Margin="0"
+                                                   VerticalAlignment="Center"/>
+                                        <Button Content="刷新"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Command="{Binding RefreshCommand}"
+                                                FontSize="12"
+                                                Padding="10,4"
+                                                Margin="8,0,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel DockPanel.Dock="Bottom"
+                                            Orientation="Horizontal"
+                                            Margin="4,8,4,0">
+                                        <Button Content="⬆ 上传"
+                                                Style="{StaticResource PrimaryButton}"
+                                                Command="{Binding UploadCommand}"
+                                                FontSize="12"
+                                                Padding="12,5"
+                                                Margin="0,0,8,0"/>
+                                        <Button Content="🗑 删除"
+                                                Style="{StaticResource DangerButton}"
+                                                Command="{Binding DeleteCommand}"
+                                                FontSize="12"
+                                                Padding="12,5"/>
+                                </StackPanel>
+
+                                <ListBox ItemsSource="{Binding Workflows}"
+                                         SelectedItem="{Binding SelectedWorkflow}"
+                                         BorderThickness="0"
+                                         Background="Transparent"
+                                         HorizontalContentAlignment="Stretch">
+                                        <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                        <TextBlock Text="{Binding}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   FontSize="13"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                </ListBox>
+                        </DockPanel>
+                </Border>
+
+                <!-- ===== 右：JSON 编辑 + 发起请求 ===== -->
+                <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- 工具栏：当前工作流名 + 保存 + 发起请求 -->
+                        <Border Grid.Row="0"
+                                Style="{StaticResource Card}"
+                                Padding="16,12"
+                                Margin="0,0,0,12">
+                                <Grid>
+                                        <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0"
+                                                    Orientation="Horizontal"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="工作流："
+                                                           Style="{StaticResource FieldLabel}"
+                                                           Margin="0"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding SelectedWorkflow}"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource PrimaryBrush}"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding StatusText}"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           Margin="16,0,0,0"
+                                                           VerticalAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="1"
+                                                Content="💾 保存"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Command="{Binding SaveCommand}"
+                                                FontSize="13"
+                                                Padding="16,7"
+                                                Margin="0,0,8,0"/>
+                                        <Button Grid.Column="2"
+                                                Content="🚀 发起请求"
+                                                Style="{StaticResource PrimaryButton}"
+                                                Command="{Binding RunCommand}"
+                                                FontSize="13"
+                                                Padding="16,7"
+                                                Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="3"
+                                                   Text="● 未保存"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource WarningBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding IsDirty, Converter={StaticResource BoolToVis}}"/>
+                                </Grid>
+                        </Border>
+
+                        <!-- JSON 编辑器 -->
+                        <Border Grid.Row="1"
+                                Style="{StaticResource Card}"
+                                Padding="12"
+                                Margin="0,0,0,12">
+                                <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top"
+                                                   Text="工作流 JSON（可直接编辑）"
+                                                   Style="{StaticResource SectionTitle}"/>
+                                        <hc:TextBox Text="{Binding EditorJson, UpdateSourceTrigger=PropertyChanged}"
+                                                    AcceptsReturn="True"
+                                                    AcceptsTab="True"
+                                                    TextWrapping="NoWrap"
+                                                    VerticalScrollBarVisibility="Auto"
+                                                    HorizontalScrollBarVisibility="Auto"
+                                                    FontFamily="Consolas"
+                                                    FontSize="12"
+                                                    VerticalContentAlignment="Top"
+                                                    Padding="8"/>
+                                </DockPanel>
+                        </Border>
+
+                        <!-- 发起请求结果 -->
+                        <Border Grid.Row="2"
+                                Style="{StaticResource Card}"
+                                Padding="16,12"
+                                Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="返回结果"
+                                                   Style="{StaticResource SectionTitle}"
+                                                   Margin="0"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding ResultStatus}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource PrimaryBrush}"
+                                                   Margin="12,0,0,0"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="（提交中…）"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   Margin="8,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding IsSubmitting, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
+                        </Border>
+
+                        <!-- 返回结果 JSON -->
+                        <Border Grid.Row="3"
+                                Style="{StaticResource Card}"
+                                Padding="12">
+                                <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top"
+                                                   Text="ComfyUI 返回 JSON"
+                                                   Style="{StaticResource SectionTitle}"/>
+                                        <hc:TextBox Text="{Binding ResultJson, Mode=OneWay}"
+                                                    IsReadOnly="True"
+                                                    AcceptsReturn="True"
+                                                    TextWrapping="NoWrap"
+                                                    VerticalScrollBarVisibility="Auto"
+                                                    HorizontalScrollBarVisibility="Auto"
+                                                    FontFamily="Consolas"
+                                                    FontSize="12"
+                                                    VerticalContentAlignment="Top"
+                                                    Padding="8"/>
+                                </DockPanel>
+                        </Border>
+                </Grid>
+        </Grid>
+</UserControl>
+

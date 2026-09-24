@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Application\MjStudio.Application\MjStudio.Application.csproj" />
+    <ProjectReference Include="..\..\Application\MjStudio.Application.Shared\MjStudio.Application.Shared.csproj" />
+    <ProjectReference Include="..\..\Domain\MjStudio.Domain\MjStudio.Domain.csproj" />
+    <ProjectReference Include="..\..\Domain\MjStudio.Domain.Shared\MjStudio.Domain.Shared.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\MjStudio.Infrastructure\MjStudio.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\WebApi\MjStudio.WebApi\MjStudio.WebApi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HandyControl" Version="3.5.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <!-- 工作流模板随程序输出到 workflows 目录 -->
+  <ItemGroup>
+    <None Include="workflows\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>workflows\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+</Project>

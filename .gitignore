@@ -1,0 +1,34 @@
+# 构建产物
+bin/
+obj/
+*.user
+
+# 日志
+*.log
+startup.log
+startup.err.log
+
+# 本地数据库
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 临时目录
+_tmpcheck/
+
+# 临时/未命名文件
+Untitled-1.json
+
+# 媒体资源与测试数据（体积大，不入库）
+resources/
+测试/
+
+# IDE
+.vs/
+.vscode/
+.idea/

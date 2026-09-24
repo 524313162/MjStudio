@@ -1,0 +1,215 @@
+<UserControl x:Class="MjStudio.Host.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hc="https://handyorg.github.io/handycontrol">
+        <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel MaxWidth="720"
+                                    HorizontalAlignment="Left">
+                                <TextBlock Text="设置"
+                                           Style="{StaticResource PageTitle}"/>
+
+                                <!-- ===== ComfyUI 设置 ===== -->
+                                <Border Style="{StaticResource Card}"
+                                        Margin="0,0,0,16"
+                                        Padding="20">
+                                        <StackPanel>
+                                                <StackPanel Orientation="Horizontal"
+                                                            Margin="0,0,0,16">
+                                                        <Border Width="3"
+                                                                Height="16"
+                                                                CornerRadius="2"
+                                                                Background="{StaticResource PrimaryBrush}"
+                                                                VerticalAlignment="Center"
+                                                                Margin="0,0,10,0"/>
+                                                        <TextBlock Text="ComfyUI"
+                                                                   FontSize="15"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                        <!-- 健康状态 -->
+                                                        <Border Background="#FFF5F5"
+                                                                CornerRadius="10"
+                                                                Padding="10,4"
+                                                                Margin="12,0,0,0"
+                                                                VerticalAlignment="Center">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                        <Ellipse Width="8"
+                                                                                 Height="8"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,6,0">
+                                                                                <Ellipse.Style>
+                                                                                        <Style TargetType="Ellipse">
+                                                                                                <Setter Property="Fill"
+                                                                                                        Value="{StaticResource DangerBrush}"/>
+                                                                                                <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding ComfyHealthy}"
+                                                                                                                     Value="True">
+                                                                                                                <Setter Property="Fill"
+                                                                                                                        Value="{StaticResource SuccessBrush}"/>
+                                                                                                        </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                        </Style>
+                                                                                </Ellipse.Style>
+                                                                        </Ellipse>
+                                                                        <TextBlock Text="{Binding ComfyStatusText}"
+                                                                                   FontSize="12"
+                                                                                   VerticalAlignment="Center">
+                                                                                <TextBlock.Style>
+                                                                                        <Style TargetType="TextBlock">
+                                                                                                <Setter Property="Foreground"
+                                                                                                        Value="{StaticResource DangerBrush}"/>
+                                                                                                <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding ComfyHealthy}"
+                                                                                                                     Value="True">
+                                                                                                                <Setter Property="Foreground"
+                                                                                                                        Value="{StaticResource SuccessBrush}"/>
+                                                                                                        </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                        </Style>
+                                                                                </TextBlock.Style>
+                                                                        </TextBlock>
+                                                                </StackPanel>
+                                                        </Border>
+                                                </StackPanel>
+
+                                                <TextBlock Text="接口地址"
+                                                           Style="{StaticResource FieldLabel}"/>
+                                                <hc:TextBox Text="{Binding ComfyUiBaseUrl, UpdateSourceTrigger=PropertyChanged}"
+                                                            hc:InfoElement.Placeholder="http://127.0.0.1:8188"
+                                                            Margin="0,0,0,14"/>
+
+                                                <TextBlock Text="程序启动地址（未启动时点击「启动 ComfyUI」拉起）"
+                                                           Style="{StaticResource FieldLabel}"/>
+                                                <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <hc:TextBox Grid.Column="0"
+                                                                    Text="{Binding ComfyUiLaunchPath, UpdateSourceTrigger=PropertyChanged}"
+                                                                    hc:InfoElement.Placeholder="ComfyUI 可执行文件完整路径，如 D:\ComfyUI\run_nvidia_gpu.bat"/>
+                                                        <Button Grid.Column="1"
+                                                                Content="🚀 启动 ComfyUI"
+                                                                Style="{StaticResource SecondaryButton}"
+                                                                Command="{Binding LaunchComfyUiCommand}"
+                                                                Margin="10,0,0,0"
+                                                                Padding="14,7"
+                                                                FontSize="13"/>
+                                                </Grid>
+                                        </StackPanel>
+                                </Border>
+
+                                <!-- ===== 内置 API ===== -->
+                                <Border Style="{StaticResource Card}"
+                                        Margin="0,0,0,16"
+                                        Padding="20">
+                                        <StackPanel>
+                                                <StackPanel Orientation="Horizontal"
+                                                            Margin="0,0,0,16">
+                                                        <Border Width="3"
+                                                                Height="16"
+                                                                CornerRadius="2"
+                                                                Background="{StaticResource PrimaryBrush}"
+                                                                VerticalAlignment="Center"
+                                                                Margin="0,0,10,0"/>
+                                                        <TextBlock Text="内置 API"
+                                                                   FontSize="15"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                        <Border Background="#F0FFF4"
+                                                                CornerRadius="10"
+                                                                Padding="10,4"
+                                                                Margin="12,0,0,0"
+                                                                VerticalAlignment="Center">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                        <Ellipse Width="8"
+                                                                                 Height="8"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,6,0">
+                                                                                <Ellipse.Style>
+                                                                                        <Style TargetType="Ellipse">
+                                                                                                <Setter Property="Fill"
+                                                                                                        Value="{StaticResource DangerBrush}"/>
+                                                                                                <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding ApiRunning}"
+                                                                                                                     Value="True">
+                                                                                                                <Setter Property="Fill"
+                                                                                                                        Value="{StaticResource SuccessBrush}"/>
+                                                                                                        </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                        </Style>
+                                                                                </Ellipse.Style>
+                                                                        </Ellipse>
+                                                                        <TextBlock Text="{Binding ApiUrl}"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                                   FontSize="12"/>
+                                                                </StackPanel>
+                                                        </Border>
+                                                </StackPanel>
+
+                                                <TextBlock Text="监听端口"
+                                                           Style="{StaticResource FieldLabel}"/>
+                                                <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="120"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <hc:TextBox Grid.Column="0"
+                                                                    Text="{Binding ApiPort, UpdateSourceTrigger=PropertyChanged}"/>
+                                                        <Button Grid.Column="1"
+                                                                Content="🔄 重启 API"
+                                                                Style="{StaticResource SecondaryButton}"
+                                                                Command="{Binding RestartApiCommand}"
+                                                                Margin="10,0,0,0"
+                                                                Padding="14,7"
+                                                                FontSize="13"/>
+                                                </Grid>
+                                                <TextBlock Text="修改端口后点击「重启 API」生效"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           FontSize="11"
+                                                           Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                </Border>
+
+                                <!-- ===== 存储目录 ===== -->
+                                <Border Style="{StaticResource Card}"
+                                        Margin="0,0,0,16"
+                                        Padding="20">
+                                        <StackPanel>
+                                                <StackPanel Orientation="Horizontal"
+                                                            Margin="0,0,0,16">
+                                                        <Border Width="3"
+                                                                Height="16"
+                                                                CornerRadius="2"
+                                                                Background="{StaticResource PrimaryBrush}"
+                                                                VerticalAlignment="Center"
+                                                                Margin="0,0,10,0"/>
+                                                        <TextBlock Text="存储目录"
+                                                                   FontSize="15"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                </StackPanel>
+
+                                                <TextBlock Text="数据库目录（每个项目一个 &lt;项目名&gt;.db 文件）"
+                                                           Style="{StaticResource FieldLabel}"/>
+                                                <hc:TextBox Text="{Binding DbRoot, UpdateSourceTrigger=PropertyChanged}"
+                                                            Margin="0,0,0,14"/>
+
+                                                <TextBlock Text="资源目录（所有项目的媒体文件统一存放处）"
+                                                           Style="{StaticResource FieldLabel}"/>
+                                                <hc:TextBox Text="{Binding ResourcesRoot, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                </Border>
+
+                                <Button Content="💾 保存设置"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Command="{Binding SaveSettingsCommand}"
+                                        HorizontalAlignment="Left"
+                                        FontSize="14"
+                                        Padding="24,9"/>
+                        </StackPanel>
+                </ScrollViewer>
+        </Grid>
+</UserControl>
+

@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Application/">
+    <Project Path="src/Application/MjStudio.Application.Shared/MjStudio.Application.Shared.csproj" />
+    <Project Path="src/Application/MjStudio.Application/MjStudio.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Domain/">
+    <Project Path="src/Domain/MjStudio.Domain.Shared/MjStudio.Domain.Shared.csproj" />
+    <Project Path="src/Domain/MjStudio.Domain/MjStudio.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/MjStudio.Host/MjStudio.Host.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/MjStudio.Infrastructure/MjStudio.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/WebApi/">
+    <Project Path="src/WebApi/MjStudio.WebApi/MjStudio.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/_tmpcheck/">
+    <Project Path="_tmpcheck/check.csproj" />
+  </Folder>
+</Solution>
