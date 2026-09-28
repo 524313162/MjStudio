@@ -138,18 +138,28 @@ namespace MjStudio.Host.ViewModels
             }
         }
 
-        /// <summary>刷新项目卡片列表</summary>
+        /// <summary>刷新项目卡片列表（排序：进行中优先，再按创建时间倒序）</summary>
         public void Refresh()
         {
             ProjectCards.Clear();
             try
             {
                 var names = _projects.ListProjectNamesAsync().GetAwaiter().GetResult();
+                var projects = new List<Project>();
                 foreach (var name in names)
                 {
                     var project = _projects.GetByNameAsync(name).GetAwaiter().GetResult();
-                    if (project is not null) ProjectCards.Add(project);
+                    if (project is not null) projects.Add(project);
                 }
+                projects.Sort((a, b) =>
+                {
+                    // 1. 状态：进行中(0) 排在 已完结(1) 前面
+                    var byStatus = a.Status.CompareTo(b.Status);
+                    if (byStatus != 0) return byStatus;
+                    // 2. 创建时间倒序（新的在前）
+                    return b.CreatedTime.CompareTo(a.CreatedTime);
+                });
+                foreach (var p in projects) ProjectCards.Add(p);
             }
             catch { /* 忽略 */ }
 

@@ -34,6 +34,15 @@
                                                 FontSize="13"
                                                 Padding="14,7"
                                                 Margin="8,0,0,0"/>
+                                        <Button Grid.Column="3"
+                                                Content="🔄 刷新"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Command="{Binding RefreshCommand}"
+                                                ToolTip="重新加载项目列表（外部/HTTP 创建的项目需刷新后显示）"
+                                                FontSize="13"
+                                                Padding="14,7"
+                                                Margin="8,0,0,0"
+                                                HorizontalAlignment="Right"/>
                                         <Button Grid.Column="4"
                                                 Content="＋ 新建项目"
                                                 Style="{StaticResource PrimaryButton}"
@@ -163,14 +172,14 @@
                                                                                                         Background="{StaticResource BorderBrush}"
                                                                                                         Margin="0,0,0,12"/>
 
-                                                                                                <!-- 底部：环节 + 集数 -->
+                                                                                                <!-- 底部：状态 + 集数 -->
                                                                                                 <StackPanel Orientation="Horizontal"
                                                                                                             Margin="0,0,0,14">
                                                                                                         <Border Background="{StaticResource PrimaryLightBrush}"
                                                                                                                 CornerRadius="4"
                                                                                                                 Padding="8,3"
                                                                                                                 Margin="0,0,10,0">
-                                                                                                                <TextBlock Text="{Binding CurrentStage, Converter={StaticResource EnumDisplay}}"
+                                                                                                                <TextBlock Text="{Binding Status, Converter={StaticResource EnumDisplay}}"
                                                                                                                            FontSize="11"
                                                                                                                            Foreground="{StaticResource PrimaryBrush}"
                                                                                                                            FontWeight="SemiBold"/>
@@ -329,38 +338,19 @@
                                                                             VerticalScrollBarVisibility="Auto"
                                                                             VerticalContentAlignment="Top"
                                                                             hc:InfoElement.Placeholder="世界观"/>
-                                                                <Grid Margin="0,12,0,0">
-                                                                        <Grid.ColumnDefinitions>
-                                                                                <ColumnDefinition Width="*"/>
-                                                                                <ColumnDefinition Width="16"/>
-                                                                                <ColumnDefinition Width="*"/>
-                                                                        </Grid.ColumnDefinitions>
-                                                                        <StackPanel Grid.Column="0">
-                                                                                <TextBlock Text="项目状态"
-                                                                                           Style="{StaticResource FieldLabel}"/>
-                                                                                <hc:ComboBox ItemsSource="{Binding StatusOptions}"
-                                                                                             SelectedItem="{Binding FormStatus}"
-                                                                                             VerticalAlignment="Center">
-                                                                                        <hc:ComboBox.ItemTemplate>
-                                                                                                <DataTemplate>
-                                                                                                        <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
-                                                                                                </DataTemplate>
-                                                                                        </hc:ComboBox.ItemTemplate>
-                                                                                </hc:ComboBox>
-                                                                        </StackPanel>
-                                                                        <StackPanel Grid.Column="2">
-                                                                                <TextBlock Text="流程环节"
-                                                                                           Style="{StaticResource FieldLabel}"/>
-                                                                                <Border Background="{StaticResource PageBgBrush}"
-                                                                                        CornerRadius="4"
-                                                                                        Padding="10,7"
-                                                                                        VerticalAlignment="Center">
-                                                                                        <TextBlock Text="{Binding SelectedProject.CurrentStage, Converter={StaticResource EnumDisplay}}"
-                                                                                                   FontSize="13"
-                                                                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
-                                                                                </Border>
-                                                                        </StackPanel>
-                                                                </Grid>
+                                                                <StackPanel Margin="0,12,0,0">
+                                                                        <TextBlock Text="项目状态"
+                                                                                   Style="{StaticResource FieldLabel}"/>
+                                                                        <hc:ComboBox ItemsSource="{Binding StatusOptions}"
+                                                                                     SelectedItem="{Binding FormStatus}"
+                                                                                     VerticalAlignment="Center">
+                                                                                <hc:ComboBox.ItemTemplate>
+                                                                                        <DataTemplate>
+                                                                                                <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                                                                                        </DataTemplate>
+                                                                                </hc:ComboBox.ItemTemplate>
+                                                                        </hc:ComboBox>
+                                                                </StackPanel>
                                                                 <TextBlock Text="已完结的项目不能再被资产绑定（资产引用项目时会过滤掉已完结项目）"
                                                                            FontSize="12"
                                                                            Foreground="{StaticResource TextMutedBrush}"

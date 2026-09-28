@@ -1,6 +1,6 @@
 ---
 name: mjstudio-agent
-description: MjStudio 漫剧制作桌面应用「Agent 接入」技能。模拟/接入 AI Agent 通过内置 API（默认 http://127.0.0.1:6066）自动完成漫剧制作前期全流程：自动创建项目（立项）→ 自动创建剧本 → 自动创建资产（角色/场景/道具/BGM/音效）→ 自动创建分镜（集+镜头，含 CN/EN 视频提示词）。一键流水线脚本幂等可重跑。关键词：agent 接入、自动创建项目、自动创建剧本、自动创建资产、自动创建分镜、流水线、pipeline、API 造数、立项、分镜镜头。
+description: MjStudio 漫剧制作桌面应用「Agent 接入」技能。模拟/接入 AI Agent 通过内置 API（默认 http://127.0.0.1:6066）自动完成漫剧制作前期全流程：自动创建项目（立项）→ 自动创建剧本 → 自动创建资产（角色/场景/道具/BGM/音效）→ 自动创建分镜（集+镜头，含 CN/EN 视频提示词）。一键流水线脚本幂等可重跑。完整接口文档（路径/参数/请求体/返回/实测示例）见 ref/api.md。关键词：agent 接入、自动创建项目、自动创建剧本、自动创建资产、自动创建分镜、流水线、pipeline、API 造数、接口文档、立项、分镜镜头。
 ---
 
 # MjStudio Agent 接入技能（mjstudio-agent）
@@ -83,69 +83,15 @@ python docs/skill/mjstudio-agent/scripts/agent_pipeline.py --steps assets,shots
 - 每集 N 个 Shot（默认 4 镜 × 30s = 120s），字段完整：
   镜头号/标题/视频内容/首帧描述/运镜(默认固定机位)/景别/朝向/空间位置/BGM/时间码/时间轴/时长/转场 + **VideoPromptCn / VideoPromptEn / VideoNegativePromptEn**（CN/EN 双视频提示词）
 
-## 五、API 端点速查（Agent 逐步调用用）
+## 五、接口使用方案（详见 ref/api.md）
 
-> 所有「当前项目」相关接口（stories/assets/episodes/shots）都依赖先 `POST /api/projects/load/{name}` 加载项目（中文名需 URL 编码）。
+> **完整接口文档在 `ref/api.md`**（按接口文档标准编写）：每个接口含 **路径 / 参数 / 请求体字段表 / 返回对象 / 实测示例**，覆盖 项目/剧本/资产/分镜/工作流 全部端点，另含通用约定（Base URL/编码/当前项目上下文/错误处理）、Agent 接入约定、Python 最小调用示例。Agent 逐步调用 API 时以该文档为准。
 
-### 项目
+核心要点（速记）：
 
-| 方法   | 路径                        | 说明                 |
-| ------ | --------------------------- | -------------------- |
-| GET    | `/api/projects`             | 列出所有项目名       |
-| GET    | `/api/projects/current`     | 获取当前项目         |
-| POST   | `/api/projects`             | 创建项目（立项）     |
-| POST   | `/api/projects/load/{name}` | 加载（切换）当前项目 |
-| PUT    | `/api/projects/{id}`        | 更新项目             |
-| DELETE | `/api/projects/{name}`      | 删除项目             |
-
-### 剧本
-
-| 方法   | 路径                        | 说明                        |
-| ------ | --------------------------- | --------------------------- |
-| GET    | `/api/stories`              | 列出当前项目全部剧本        |
-| GET    | `/api/stories/episode/{no}` | 按集获取剧本                |
-| POST   | `/api/stories`              | 创建/更新剧本（按集号幂等） |
-| DELETE | `/api/stories/{id}`         | 删除剧本                    |
-
-### 资产
-
-| 方法   | 路径                                                          | 说明                                |
-| ------ | ------------------------------------------------------------- | ----------------------------------- |
-| GET    | `/api/assets?type={n}`                                        | 列出资产（type 可选，1~7）          |
-| GET    | `/api/assets/{id}`                                            | 获取单个资产                        |
-| POST   | `/api/assets`                                                 | 创建/更新资产（Id 为空=创建）       |
-| PUT    | `/api/assets/{id}/prompts`                                    | 更新提示词（Prompt/NegativePrompt） |
-| PUT    | `/api/assets/{id}/refs`                                       | 设置引用项目（全量覆盖）            |
-| PUT    | `/api/assets/{id}/resource?relativePath=&mediaType=&purpose=` | 关联资源文件                        |
-| DELETE | `/api/assets/{id}`                                            | 删除资产                            |
-
-### 分镜（集 + 镜头）
-
-| 方法   | 路径                              | 说明                          |
-| ------ | --------------------------------- | ----------------------------- |
-| GET    | `/api/episodes`                   | 列出当前项目全部集            |
-| POST   | `/api/episodes`                   | 创建/更新集（按集号幂等）     |
-| GET    | `/api/episodes/{episodeId}/shots` | 列出某集全部镜头              |
-| POST   | `/api/shots`                      | 创建/更新镜头（Id 为空=创建） |
-| PUT    | `/api/shots/{id}/prompts`         | 更新镜头视频提示词（CN/EN）   |
-| DELETE | `/api/shots/{id}`                 | 删除镜头                      |
-
-### 请求体字段（JSON，camelCase）
-
-**CreateProjectRequest**：`name`(必填) / `storyName` / `worldview` / `description` / `totalEpisodes` / `episodeDuration`(默认120) / `aspectRatio`(0=16:9,1=9:16) / `targetPlatform` / `genre` / `audience` / `artStyle` / `voiceLanguage` / `originalOrAdapted` / `bgmStyle` / `hasOpeningEnding` / `deliverables` / `status`(0=进行中,1=已完结)
-
-**StoryUpsertRequest**：`id`(空=创建) / `episodeNo` / `title` / `characterList` / `content`(Markdown) / `duration`
-
-**AssetUpsertRequest**：`id`(空=创建) / `assetType`(1角色/2场景/3道具/4BGM/5音乐/6音效/7声线) / `name` / `description` / `prompt`(正向) / `negativePrompt`(反向) / `order`
-
-**EpisodeUpsertRequest**：`id`(空=创建) / `episodeNo` / `name` / `duration` / `assetWhitelist` / `cameraSwitchTable` / `audioCueTable` / `dialogueList`
-
-**ShotUpsertRequest**：`id`(空=创建) / `episodeId`(必填) / `shotNo` / `title` / `videoContent` / `firstFrameDesc` / `camera` / `shotSize` / `cameraFacing` / `spatialPosition` / `bgm` / `bgmRange` / `timecode` / `timeline` / `voiceConstraint` / `ambientSfx` / `sfxRange` / `duration`(float秒) / `transition` / `videoPromptCn` / `videoPromptEn` / `videoNegativePromptEn`
-
-## 六、Agent 接入约定
-
-1. **写入顺序固定**：项目 → load → 剧本 → 资产 → 分镜（分镜依赖集 id，集依赖项目上下文）
-2. **幂等优先**：写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/镜头按集内镜号），已存在则跳过或复用 id
-3. **中文处理**：请求体 JSON 用 UTF-8（`ensure_ascii=False`）；URL 路径中的中文项目名需 `urllib.parse.quote`
-4. **错误处理**：非 200 响应体含 `message` 字段；404 通常是项目未 load 或 id 不存在
-5. **后续环节**（图片/视频/配音/合成）走工作流 API（`/api/workflow/*`），不在本技能范围
+- **Base URL**：`http://127.0.0.1:6066`，请求体 JSON camelCase + UTF-8
+- **当前项目上下文**：stories/assets/episodes/shots 都依赖先 `POST /api/projects/load/{name}` 加载（中文名需 URL 编码）
+- **查询项目详情**：无独立 GET by name，用 `POST /api/projects/load/{name}`（返回完整 Project 对象）或 `GET /api/projects/current`
+- **写入顺序固定**：项目 → load → 剧本 → 资产 → 分镜
+- **幂等优先**：写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/镜头按集内镜号）
+- **生成环节**（图片/视频/配音/合成）走工作流 API（`/api/workflow/*`），见 ref/api.md 第六节
