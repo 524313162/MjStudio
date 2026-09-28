@@ -47,6 +47,8 @@ python docs/skill/mjstudio-agent/scripts/agent_pipeline.py --steps assets,shots
 
 ### 幂等性（可重复运行，不产生重复数据）
 
+> 注意：**服务端 POST 在 `id` 为空时一律新建、不去重**（实测）。下表是**脚本的客户端查重策略**——先 GET 列表查重，已存在则跳过。自行调 API 的 agent 必须自己实现同样的查重逻辑。
+
 | 环节 | 幂等键         | 行为                        |
 | ---- | -------------- | --------------------------- |
 | 项目 | 项目名         | 已存在 → 跳过创建，直接加载 |
@@ -61,11 +63,11 @@ python docs/skill/mjstudio-agent/scripts/agent_pipeline.py --steps assets,shots
 
 立项字段完整写入：故事名/世界观/总集数/每集时长/画幅(竖屏9:16)/平台/题材/受众/美术风格/配音语言/BGM风格/交付物/状态(进行中)。创建后**立即 load 为当前项目**（后续所有 API 都依赖当前项目上下文）。
 
-### 2. 剧本（`POST /api/stories`，按集号幂等）
+### 2. 剧本（`POST /api/stories`，脚本按集号查重跳过）
 
 每集 Markdown 正文按 manju-director 剧本格式：本集概要 / 本集角色列表 / 剧情热点 / 时长估算（≥120s 硬指标）/ 片头片尾（默认无）/ 场景+台词（`>` 标台词）。
 
-### 3. 资产（`POST /api/assets`，按名称幂等）
+### 3. 资产（`POST /api/assets`，脚本按名称查重跳过）
 
 按 AssetTypeEnum 分类型创建（含正向 Prompt + 反向 NegativePrompt）：
 
@@ -93,5 +95,5 @@ python docs/skill/mjstudio-agent/scripts/agent_pipeline.py --steps assets,shots
 - **当前项目上下文**：stories/assets/episodes/shots 都依赖先 `POST /api/projects/load/{name}` 加载（中文名需 URL 编码）
 - **查询项目详情**：无独立 GET by name，用 `POST /api/projects/load/{name}`（返回完整 Project 对象）或 `GET /api/projects/current`
 - **写入顺序固定**：项目 → load → 剧本 → 资产 → 分镜
-- **幂等优先**：写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/镜头按集内镜号）
+- **幂等由调用方保证**：服务端 POST 不去重（`id` 为空一律新建），写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/镜头按集内镜号），已存在则跳过或带 `id` 更新
 - **生成环节**（图片/视频/配音/合成）走工作流 API（`/api/workflow/*`），见 ref/api.md 第六节

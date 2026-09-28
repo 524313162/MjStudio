@@ -184,19 +184,19 @@ DELETE /api/projects/HTTP%E6%8E%A5%E5%8F%A3%E6%B5%8B%E8%AF%95   （= /delete/HTT
 - 路径参数：`no` 集号（int）
 - 返回：Story 对象；不存在 → 404
 
-### 3.3 创建/更新剧本（按集号幂等）
+### 3.3 创建/更新剧本
 
 - **`POST /api/stories`**
 - 请求体：StoryUpsertRequest
 - 返回：Story 对象
-- **幂等**：`id` 为空时按当前项目内 `episodeNo` 查重，该集已存在则更新而非新建
+- **行为（实测）**：`id` 非空 → 按 id 更新；`id` 为空 → **一律新建**（服务端不按集号去重，同集号重复 POST 会产生多条记录）。幂等由**调用方**保证：先 `GET /api/stories` 按 `episodeNo` 查重，已存在则跳过或带 `id` 更新
 
 **StoryUpsertRequest**
 
 | 字段            | 类型   | 必填 | 说明                     |
 | --------------- | ------ | ---- | ------------------------ |
 | `id`            | long   | 否   | 空=创建，非空=按 id 更新 |
-| `episodeNo`     | int    | 是   | 集号（幂等键）           |
+| `episodeNo`     | int    | 是   | 集号（客户端幂等查重键） |
 | `title`         | string | 是   | 标题                     |
 | `characterList` | string | 否   | 本集角色列表             |
 | `content`       | string | 否   | 剧本正文（Markdown）     |
@@ -259,12 +259,12 @@ POST /api/stories
 - **`GET /api/assets/{id}`**
 - 返回：Asset 对象；不存在 → 404
 
-### 4.3 创建/更新资产（按名称幂等）
+### 4.3 创建/更新资产
 
 - **`POST /api/assets`**
 - 请求体：AssetUpsertRequest
 - 返回：Asset 对象
-- **幂等**：`id` 为空时按当前项目内 `name` 查重，同名已存在则更新而非新建
+- **行为（实测）**：`id` 非空 → 按 id 更新；`id` 为空 → **一律新建**（服务端不按名称去重）。幂等由**调用方**保证：先 `GET /api/assets` 按 `name` 查重，已存在则跳过或带 `id` 更新
 
 **AssetUpsertRequest**
 
@@ -272,7 +272,7 @@ POST /api/stories
 | ---------------- | ------ | ---- | ----------------------------------------------- |
 | `id`             | long   | 否   | 空=创建，非空=更新                              |
 | `assetType`      | int    | 是   | 1=角色 2=场景 3=道具 4=BGM 5=音乐 6=音效 7=声线 |
-| `name`           | string | 是   | 资产名（幂等键）                                |
+| `name`           | string | 是   | 资产名（客户端幂等查重键）                      |
 | `description`    | string | 否   | 描述                                            |
 | `prompt`         | string | 否   | 正向提示词                                      |
 | `negativePrompt` | string | 否   | 反向提示词                                      |
@@ -305,19 +305,20 @@ POST /api/assets
 ### 4.5 设置引用项目（全量覆盖）
 
 - **`PUT /api/assets/{id}/refs`**
-- 请求体：项目名数组 `["项目A", "项目B"]`（全量覆盖，传空数组=清除全部引用）
+- 请求体：`{ "projectIds": [1, 2] }`（**项目 id 数组**，全量覆盖，传空数组=清除全部引用）
 - 返回：Asset 对象
 
 ### 4.6 关联资源文件
 
 - **`PUT /api/assets/{id}/resource?relativePath=&mediaType=&purpose=`**
 - Query 参数：
-  | 参数 | 说明 |
-  | --- | --- |
-  | `relativePath` | 相对**资源目录**的路径，如 `images/x.png`、`audio/bgm.mp3` |
-  | `mediaType` | MIME 类型，如 `image/png`、`audio/mpeg` |
-  | `purpose` | ResourcePurposeEnum 枚举值 |
-- 返回：Asset 对象
+  | 参数 | 必填 | 说明 |
+  | --- | --- | --- |
+  | `relativePath` | 是 | 相对**资源目录**的路径，如 `images/x.png`、`audio/bgm.mp3` |
+  | `mediaType` | 是 | MIME 类型，如 `image/png`、`audio/mpeg` |
+  | `purpose` | 是 | ResourcePurposeEnum 枚举值 |
+  | `duration` | 否 | 时长（秒，音频用） |
+- 返回：Resource 对象
 
 ### 4.7 删除资产
 
@@ -335,73 +336,85 @@ POST /api/assets
 - **`GET /api/episodes`**
 - 返回：`Episode[]`
 
-### 5.2 创建/更新集（按集号幂等）
+### 5.2 按集号获取集
+
+- **`GET /api/episodes/{no}`**
+- 路径参数：`no` 集号（int）
+- 返回：Episode 对象；不存在 → 404
+
+### 5.3 创建/更新集
 
 - **`POST /api/episodes`**
 - 请求体：EpisodeUpsertRequest
 - 返回：Episode 对象
-- **幂等**：`id` 为空时按当前项目内 `episodeNo` 查重，已存在则复用/更新
+- **行为（实测）**：`id` 非空 → 按 id 更新；`id` 为空 → **一律新建**（服务端不按集号去重）。幂等由**调用方**保证：先 `GET /api/episodes` 按 `episodeNo` 查重，已存在则复用其 id
 
 **EpisodeUpsertRequest**
 
-| 字段                | 类型   | 必填 | 说明               |
-| ------------------- | ------ | ---- | ------------------ |
-| `id`                | long   | 否   | 空=创建，非空=更新 |
-| `episodeNo`         | int    | 是   | 集号（幂等键）     |
-| `name`              | string | 否   | 集名称             |
-| `duration`          | int    | 否   | 时长（秒）         |
-| `assetWhitelist`    | string | 否   | 资产白名单         |
-| `cameraSwitchTable` | string | 否   | 运镜切换表         |
-| `audioCueTable`     | string | 否   | 音频提示表         |
-| `dialogueList`      | string | 否   | 台词列表           |
+| 字段                | 类型   | 必填 | 说明                     |
+| ------------------- | ------ | ---- | ------------------------ |
+| `id`                | long   | 否   | 空=创建，非空=更新       |
+| `episodeNo`         | int    | 是   | 集号（客户端幂等查重键） |
+| `name`              | string | 否   | 集名称                   |
+| `duration`          | int    | 否   | 时长（秒）               |
+| `assetWhitelist`    | string | 否   | 资产白名单               |
+| `cameraSwitchTable` | string | 否   | 运镜切换表               |
+| `audioCueTable`     | string | 否   | 音频提示表               |
+| `dialogueList`      | string | 否   | 台词列表                 |
 
-### 5.3 列出某集全部镜头
+### 5.4 列出某集全部镜头
 
 - **`GET /api/episodes/{episodeId}/shots`**
 - 路径参数：`episodeId`（long）
 - 返回：`Shot[]`
 
-### 5.4 创建/更新镜头（按集内镜号幂等）
+### 5.5 获取单个镜头
+
+- **`GET /api/shots/{id}`**
+- 路径参数：`id`（long）
+- 返回：Shot 对象；不存在 → 404
+
+### 5.6 创建/更新镜头
 
 - **`POST /api/shots`**
 - 请求体：ShotUpsertRequest
 - 返回：Shot 对象
-- **幂等**：`id` 为空时按 `episodeId` + `shotNo` 查重，已存在则更新
+- **行为（实测）**：`id` 非空 → 按 id 更新；`id` 为空 → **一律新建**（服务端不按镜头号去重）。幂等由**调用方**保证：先 `GET /api/episodes/{episodeId}/shots` 按 `shotNo` 查重，已存在则跳过或带 `id` 更新
 
 **ShotUpsertRequest**
 
-| 字段                    | 类型   | 必填 | 说明                     |
-| ----------------------- | ------ | ---- | ------------------------ |
-| `id`                    | long   | 否   | 空=创建，非空=更新       |
-| `episodeId`             | long   | 是   | 所属集 id                |
-| `shotNo`                | int    | 是   | 集内镜头号（幂等键）     |
-| `title`                 | string | 否   | 镜头标题                 |
-| `videoContent`          | string | 否   | 视频内容描述             |
-| `firstFrameDesc`        | string | 否   | 首帧描述                 |
-| `camera`                | string | 否   | 运镜（默认「固定机位」） |
-| `shotSize`              | string | 否   | 景别                     |
-| `cameraFacing`          | string | 否   | 朝向                     |
-| `spatialPosition`       | string | 否   | 空间位置                 |
-| `bgm`                   | string | 否   | BGM                      |
-| `bgmRange`              | string | 否   | BGM 区间                 |
-| `timecode`              | string | 否   | 时间码                   |
-| `timeline`              | string | 否   | 时间轴                   |
-| `voiceConstraint`       | string | 否   | 配音约束                 |
-| `ambientSfx`            | string | 否   | 环境音效                 |
-| `sfxRange`              | string | 否   | 音效区间                 |
-| `duration`              | float  | 否   | 时长（秒）               |
-| `transition`            | string | 否   | 转场                     |
-| `videoPromptCn`         | string | 否   | 视频提示词（中文）       |
-| `videoPromptEn`         | string | 否   | 视频提示词（英文）       |
-| `videoNegativePromptEn` | string | 否   | 视频反向提示词（英文）   |
+| 字段                    | 类型   | 必填 | 说明                           |
+| ----------------------- | ------ | ---- | ------------------------------ |
+| `id`                    | long   | 否   | 空=创建，非空=更新             |
+| `episodeId`             | long   | 是   | 所属集 id                      |
+| `shotNo`                | int    | 是   | 集内镜头号（客户端幂等查重键） |
+| `title`                 | string | 否   | 镜头标题                       |
+| `videoContent`          | string | 否   | 视频内容描述                   |
+| `firstFrameDesc`        | string | 否   | 首帧描述                       |
+| `camera`                | string | 否   | 运镜（默认「固定机位」）       |
+| `shotSize`              | string | 否   | 景别                           |
+| `cameraFacing`          | string | 否   | 朝向                           |
+| `spatialPosition`       | string | 否   | 空间位置                       |
+| `bgm`                   | string | 否   | BGM                            |
+| `bgmRange`              | string | 否   | BGM 区间                       |
+| `timecode`              | string | 否   | 时间码                         |
+| `timeline`              | string | 否   | 时间轴                         |
+| `voiceConstraint`       | string | 否   | 配音约束                       |
+| `ambientSfx`            | string | 否   | 环境音效                       |
+| `sfxRange`              | string | 否   | 音效区间                       |
+| `duration`              | float  | 否   | 时长（秒）                     |
+| `transition`            | string | 否   | 转场                           |
+| `videoPromptCn`         | string | 否   | 视频提示词（中文）             |
+| `videoPromptEn`         | string | 否   | 视频提示词（英文）             |
+| `videoNegativePromptEn` | string | 否   | 视频反向提示词（英文）         |
 
-### 5.5 更新镜头视频提示词
+### 5.7 更新镜头视频提示词
 
 - **`PUT /api/shots/{id}/prompts`**
 - 请求体：`{ "promptCn": "...", "promptEn": "...", "negativePromptEn": "..." }`
 - 返回：Shot 对象
 
-### 5.6 删除镜头
+### 5.8 删除镜头
 
 - **`DELETE /api/shots/{id}`**
 - 返回：`{ "message": "已删除" }`
@@ -424,7 +437,7 @@ POST /api/assets
 ## 七、Agent 接入约定
 
 1. **写入顺序固定**：项目 → load → 剧本 → 资产 → 分镜（分镜依赖集 id，集依赖项目上下文）
-2. **幂等优先**：写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/镜头按集内镜号），已存在则跳过或复用 id
+2. **幂等由调用方保证**：服务端 POST 在 `id` 为空时一律新建、不去重。写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/集按集号/镜头按集内镜号），已存在则跳过或带 `id` 更新（`agent_pipeline.py` 即此策略）
 3. **中文处理**：请求体 JSON 用 UTF-8（`ensure_ascii=False`）；URL 路径中的中文项目名需 `urllib.parse.quote`
 4. **错误处理**：非 200 响应体含 `message` 字段；404 通常是项目未 load 或 id 不存在
 5. **后续环节**（图片/视频/配音/合成）走工作流 API（`/api/workflow/*`）
