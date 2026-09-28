@@ -219,7 +219,11 @@ namespace MjStudio.Host.ViewModels
             try
             {
                 var result = await _engine.SubmitRawAsync(EditorJson);
-                ResultJson = result?.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) ?? "(空响应)";
+                ResultJson = result?.ToJsonString(new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }) ?? "(空响应)";
                 ResultStatus = "已返回";
                 StatusText = $"请求完成：{SelectedWorkflow}";
             }
@@ -241,7 +245,11 @@ namespace MjStudio.Host.ViewModels
             try
             {
                 using var doc = JsonDocument.Parse(json);
-                return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions { WriteIndented = true });
+                return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                });
             }
             catch
             {

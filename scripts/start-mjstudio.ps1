@@ -37,10 +37,16 @@ $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 $logFile = Join-Path $outDir "startup_$stamp.log"
 $errFile = Join-Path $outDir "startup_$stamp.err.log"
 
+# NOTE: run the built exe directly instead of `dotnet run`.
+# `dotnet run` is a parent process; when it exits it closes the redirected
+# stdout handle, which crashes the child (MjStudio.Host) shortly after start.
+$exe = Join-Path $outDir 'MjStudio.Host.exe'
+if (-not (Test-Path $exe)) {
+    Write-Host "Executable not found: $exe" -ForegroundColor Red
+    exit 1
+}
+
 Write-Host "Starting MjStudio... (log: $logFile)"
-Start-Process dotnet -ArgumentList 'run', '--project', (Join-Path $hostDir 'MjStudio.Host.csproj'), '--no-build' `
-    -RedirectStandardOutput $logFile `
-    -RedirectStandardError $errFile `
-    -WorkingDirectory $root
+Start-Process $exe -RedirectStandardOutput $logFile -RedirectStandardError $errFile -WorkingDirectory $root
 
 Write-Host 'Started.'

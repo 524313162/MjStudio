@@ -134,13 +134,14 @@ namespace MjStudio.Host
             }
             else
             {
-                ShadowBorder.Margin = new Thickness(16);
+                ShadowBorder.Margin = new Thickness(2);
                 ShadowBorder.CornerRadius = new CornerRadius(12);
                 ShadowBorder.Effect = new System.Windows.Media.Effects.DropShadowEffect
                 {
-                    BlurRadius = 24,
-                    ShadowDepth = 0,
-                    Opacity = 0.35,
+                    BlurRadius = 2,
+                    ShadowDepth = 1,
+                    Direction = 270,
+                    Opacity = 0.25,
                     Color = System.Windows.Media.Colors.Black
                 };
                 RootBorder.Margin = new Thickness(0);

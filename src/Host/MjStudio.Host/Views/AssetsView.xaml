@@ -247,37 +247,85 @@
                                       Color="#1A202C"/>
                 </Border.Effect>
                 <DockPanel>
+                    <!-- 顶部渐变装饰条 -->
+                    <Border DockPanel.Dock="Top"
+                            Height="3">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0"
+                                                 EndPoint="1,0">
+                                <GradientStop Color="#4F6EF7"
+                                              Offset="0"/>
+                                <GradientStop Color="#8B5CF6"
+                                              Offset="0.6"/>
+                                <GradientStop Color="#EC4899"
+                                              Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+
                     <!-- 抽屉头部 -->
                     <Border DockPanel.Dock="Top"
-                            Padding="24,16"
-                            BorderBrush="{StaticResource BorderBrush}"
-                            BorderThickness="0,0,0,1">
+                            Padding="24,18,24,14">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Right"
-                                        Orientation="Horizontal">
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Top">
                                 <!-- 新建子资产（仅编辑已有资产时可用） -->
                                 <Button Content="＋ 子资产"
                                         Style="{StaticResource SecondaryButton}"
                                         Command="{Binding CreateChildCommand}"
                                         FontSize="13"
                                         Padding="12,4"
-                                        Margin="0,0,8,0"
+                                        Margin="0,0,10,0"
                                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"/>
-                                <Button Content="✕"
-                                        Style="{StaticResource SecondaryButton}"
-                                        Command="{Binding CloseDrawerCommand}"
-                                        Padding="8,4"
-                                        FontSize="14"/>
+                                <Button Command="{Binding CloseDrawerCommand}"
+                                        Width="28"
+                                        Height="28"
+                                        Cursor="Hand"
+                                        ToolTip="关闭">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bd"
+                                                    Background="Transparent"
+                                                    CornerRadius="14">
+                                                <TextBlock Text="✕"
+                                                           FontSize="13"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver"
+                                                         Value="True">
+                                                    <Setter TargetName="bd"
+                                                            Property="Background"
+                                                            Value="{StaticResource PageBgBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
                             </StackPanel>
-                            <StackPanel>
-                                <TextBlock Text="{Binding DrawerTitle}"
-                                           FontSize="18"
-                                           FontWeight="Bold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding DrawerTitle}"
+                                               FontSize="18"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <Border Background="{StaticResource PrimaryLightBrush}"
+                                            CornerRadius="10"
+                                            Padding="8,2"
+                                            Margin="10,0,0,0"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FormAssetType, Converter={StaticResource EnumDisplay}}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource PrimaryBrush}"/>
+                                    </Border>
+                                </StackPanel>
                                 <TextBlock Text="{Binding DrawerSubtitle}"
-                                           FontSize="13"
-                                           Foreground="{StaticResource PrimaryBrush}"
-                                           Margin="0,4,0,0"/>
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,5,0,0"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>
@@ -288,24 +336,68 @@
                             Background="White"
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,1,0,0">
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Right">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="12"
+                                              ShadowDepth="-3"
+                                              Direction="270"
+                                              Opacity="0.08"
+                                              Color="#1A202C"/>
+                        </Border.Effect>
+                        <Grid>
                             <Button Content="🗑 删除"
                                     Style="{StaticResource DangerButton}"
                                     Command="{Binding DeleteCommand}"
                                     FontSize="13"
-                                    Margin="0,0,12,0"
+                                    HorizontalAlignment="Left"
                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"/>
-                            <Button Content="💾 保存"
-                                    Style="{StaticResource PrimaryButton}"
-                                    Command="{Binding SaveCommand}"
-                                    FontSize="13"/>
-                        </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Right">
+                                <Button Content="取消"
+                                        Style="{StaticResource SecondaryButton}"
+                                        Command="{Binding CloseDrawerCommand}"
+                                        FontSize="13"
+                                        Margin="0,0,10,0"/>
+                                <Button Content="💾 保存"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Command="{Binding SaveCommand}"
+                                        FontSize="13"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- 表单内容 -->
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="24">
+                            <!-- 媒体预览（图片 / 音频） -->
+                            <Border Background="{StaticResource PageBgBrush}"
+                                    CornerRadius="10"
+                                    Padding="14"
+                                    Margin="0,0,0,20"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1"
+                                    Visibility="{Binding SelectedCard.HasMedia, Converter={StaticResource BoolToVis}}">
+                                <Grid>
+                                    <Image Source="{Binding SelectedCard.ImagePath, Converter={StaticResource ImagePath}}"
+                                           MaxHeight="180"
+                                           Stretch="Uniform"
+                                           Margin="0,0,0,12"
+                                           Visibility="{Binding SelectedCard.HasImage, Converter={StaticResource BoolToVis}}"/>
+                                    <StackPanel VerticalAlignment="Center"
+                                                Visibility="{Binding SelectedCard.HasAudio, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="🎵"
+                                                   FontSize="32"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="0,0,0,10"/>
+                                        <Button Content="▶ 试听"
+                                                Style="{StaticResource PrimaryButton}"
+                                                Click="OnDrawerPlayAudioClick"
+                                                FontSize="13"
+                                                Padding="18,6"
+                                                HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
                             <!-- 基本信息 -->
                             <StackPanel Margin="0,0,0,20">
                                 <StackPanel Orientation="Horizontal"
@@ -316,7 +408,7 @@
                                             Background="{StaticResource PrimaryBrush}"
                                             VerticalAlignment="Center"
                                             Margin="0,0,8,0"/>
-                                    <TextBlock Text="基本信息"
+                                    <TextBlock Text="📋 基本信息"
                                                FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimaryBrush}"/>
@@ -367,7 +459,7 @@
                                             Background="{StaticResource PrimaryBrush}"
                                             VerticalAlignment="Center"
                                             Margin="0,0,8,0"/>
-                                    <TextBlock Text="引用项目"
+                                    <TextBlock Text="🔗 引用项目"
                                                FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimaryBrush}"/>
@@ -415,7 +507,7 @@
                                             Background="{StaticResource PrimaryBrush}"
                                             VerticalAlignment="Center"
                                             Margin="0,0,8,0"/>
-                                    <TextBlock Text="子资产"
+                                    <TextBlock Text="🧩 子资产"
                                                FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimaryBrush}"/>
@@ -461,7 +553,7 @@
                                             Background="{StaticResource PrimaryBrush}"
                                             VerticalAlignment="Center"
                                             Margin="0,0,8,0"/>
-                                    <TextBlock Text="资产全部描述（提示词，实时预览）"
+                                    <TextBlock Text="📝 资产全部描述（提示词，实时预览）"
                                                FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimaryBrush}"/>
@@ -492,7 +584,7 @@
                                             Background="{StaticResource PrimaryBrush}"
                                             VerticalAlignment="Center"
                                             Margin="0,0,8,0"/>
-                                    <TextBlock Text="提示词"
+                                    <TextBlock Text="✨ 提示词"
                                                FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimaryBrush}"/>
@@ -538,26 +630,69 @@
                                       Color="#1A202C"/>
                 </Border.Effect>
                 <DockPanel>
+                    <!-- 顶部渐变装饰条 -->
                     <Border DockPanel.Dock="Top"
-                            Padding="24,16"
-                            BorderBrush="{StaticResource BorderBrush}"
-                            BorderThickness="0,0,0,1">
+                            Height="3">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0"
+                                                 EndPoint="1,0">
+                                <GradientStop Color="#4F6EF7"
+                                              Offset="0"/>
+                                <GradientStop Color="#8B5CF6"
+                                              Offset="0.6"/>
+                                <GradientStop Color="#EC4899"
+                                              Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+
+                    <Border DockPanel.Dock="Top"
+                            Padding="24,18,24,14">
                         <DockPanel>
                             <Button DockPanel.Dock="Right"
-                                    Content="✕"
-                                    Style="{StaticResource SecondaryButton}"
                                     Click="OnDetailDrawerClose"
-                                    Padding="8,4"
-                                    FontSize="14"/>
-                            <StackPanel>
-                                <TextBlock x:Name="DetailTitle"
-                                           FontSize="18"
-                                           FontWeight="Bold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBlock x:Name="DetailSubtitle"
-                                           FontSize="13"
-                                           Foreground="{StaticResource PrimaryBrush}"
-                                           Margin="0,4,0,0"/>
+                                    Width="28"
+                                    Height="28"
+                                    Cursor="Hand"
+                                    ToolTip="关闭">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd"
+                                                Background="Transparent"
+                                                CornerRadius="14">
+                                            <TextBlock Text="✕"
+                                                       FontSize="13"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver"
+                                                     Value="True">
+                                                <Setter TargetName="bd"
+                                                        Property="Background"
+                                                        Value="{StaticResource PageBgBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <StackPanel VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="DetailTitle"
+                                               FontSize="18"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <Border Background="{StaticResource PrimaryLightBrush}"
+                                            CornerRadius="10"
+                                            Padding="8,2"
+                                            Margin="10,0,0,0"
+                                            VerticalAlignment="Center">
+                                        <TextBlock x:Name="DetailSubtitle"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource PrimaryBrush}"/>
+                                    </Border>
+                                </StackPanel>
                             </StackPanel>
                         </DockPanel>
                     </Border>

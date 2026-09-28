@@ -84,7 +84,11 @@ namespace MjStudio.WebApi.Controllers
                 return Ok(new WorkflowRawResponse
                 {
                     Success = true,
-                    Result = result?.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+                    Result = result?.ToJsonString(new System.Text.Json.JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                    })
                 });
             }
             catch (Exception ex)

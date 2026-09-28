@@ -120,7 +120,11 @@ namespace MjStudio.WebApi.Services
 
             Directory.CreateDirectory(WorkflowDir);
             var path = Path.Combine(WorkflowDir, name + ".json");
-            var normalized = node.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            var normalized = node.ToJsonString(new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
             File.WriteAllText(path, normalized);
             return normalized;
         }

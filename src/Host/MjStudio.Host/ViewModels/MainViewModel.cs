@@ -56,12 +56,27 @@ namespace MjStudio.Host.ViewModels
         private string _resourcesRoot = "";
         public string ResourcesRoot { get => _resourcesRoot; set => SetProperty(ref _resourcesRoot, value); }
 
-        // ===== 侧边栏收起/展开 =====
+        // ===== 侧边栏收起/展开（手动切换：展开 180 / 收起 56 图标栏） =====
         private bool _sidebarCollapsed;
-        public bool SidebarCollapsed { get => _sidebarCollapsed; set => SetProperty(ref _sidebarCollapsed, value); }
+        public bool SidebarCollapsed
+        {
+            get => _sidebarCollapsed;
+            set
+            {
+                if (SetProperty(ref _sidebarCollapsed, value))
+                {
+                    OnPropertyChanged(nameof(IsSidebarRailVisible));
+                    OnPropertyChanged(nameof(SidebarColumnWidth));
+                }
+            }
+        }
 
-        /// <summary>侧边栏宽度（展开 220 / 收起 0）</summary>
-        public double SidebarWidth => SidebarCollapsed ? 0 : 220;
+        /// <summary>图标栏可见：收起时</summary>
+        public bool IsSidebarRailVisible => SidebarCollapsed;
+
+        /// <summary>侧边栏列宽（直接绑定 GridLength，避免转换器 double→GridLength 转换失败）</summary>
+        public System.Windows.GridLength SidebarColumnWidth
+            => SidebarCollapsed ? new System.Windows.GridLength(56) : new System.Windows.GridLength(180);
 
         // ===== 导航 =====
         private string _currentPage = "projects";
@@ -235,7 +250,6 @@ namespace MjStudio.Host.ViewModels
         private void ToggleSidebar()
         {
             SidebarCollapsed = !SidebarCollapsed;
-            OnPropertyChanged(nameof(SidebarWidth));
         }
 
         private void Navigate(object? parameter)

@@ -65,6 +65,9 @@ namespace MjStudio.Host.ViewModels
 
         public bool HasAudio => !string.IsNullOrEmpty(AudioPath) && File.Exists(AudioPath);
 
+        /// <summary>是否有可预览媒体（图片/音频）</summary>
+        public bool HasMedia => HasImage || HasAudio;
+
         /// <summary>是否音频资产（BGM/音乐/音效/声线）</summary>
         public bool IsAudio => Asset.AssetType is AssetTypeEnum.Bgm or AssetTypeEnum.Music or AssetTypeEnum.SoundEffect or AssetTypeEnum.Voice;
 

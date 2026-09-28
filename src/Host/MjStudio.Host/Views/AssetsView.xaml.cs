@@ -42,6 +42,26 @@ namespace MjStudio.Host.Views
                 vm.CloseDrawerCommand.Execute(null);
         }
 
+        /// <summary>抽屉内试听音频</summary>
+        private void OnDrawerPlayAudioClick(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not ViewModels.AssetsViewModel vm || vm.SelectedCard is not { } card) return;
+            if (string.IsNullOrEmpty(card.AudioPath) || !File.Exists(card.AudioPath)) return;
+
+            var path = card.AudioPath;
+            if (_player.Source is not null && _player.Source.OriginalString == path)
+            {
+                if (_player.Position > TimeSpan.Zero && _player.Position < _player.NaturalDuration)
+                    _player.Pause();
+                else
+                    _player.Play();
+                return;
+            }
+
+            _player.Open(new Uri(path, UriKind.Absolute));
+            _player.Play();
+        }
+
         // ==================== 表格行双击 ====================
 
         /// <summary>双击表格行打开资产详情抽屉</summary>
@@ -52,9 +72,9 @@ namespace MjStudio.Host.Views
                 vm.OpenDrawerCommand.Execute(card);
         }
 
-        // ==================== 音频播放（问题6） ====================
+        // ==================== 音频播放 ====================
 
-        /// <summary>点击播放/暂停音频（卡片上的 ▶ 按钮）</summary>
+        /// <summary>点击播放/暂停音频（表格行上的 🎵 按钮）</summary>
         private void OnPlayAudioClick(object sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not string path) return;
@@ -76,7 +96,7 @@ namespace MjStudio.Host.Views
             _player.Play();
         }
 
-        // ==================== 图片放大（问题6） ====================
+        // ==================== 图片放大 ====================
 
         /// <summary>点击图片放大查看（弹出窗口）</summary>
         private void OnImageClick(object sender, MouseButtonEventArgs e)
@@ -119,42 +139,235 @@ namespace MjStudio.Host.Views
             e.Handled = true; // 阻止冒泡到行双击
 
             DetailTitle.Text = card.Name;
-            DetailSubtitle.Text = $"类型：{card.TypeDisplay}";
+            DetailSubtitle.Text = card.TypeDisplay;
             DetailContent.Children.Clear();
 
-            // 描述
+            // ===== 媒体预览卡片 =====
+            if (card.HasImage && !string.IsNullOrEmpty(card.ImagePath))
+            {
+                try
+                {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.UriSource = new Uri(card.ImagePath, UriKind.Absolute);
+                    bmp.EndInit();
+                    bmp.Freeze();
+
+                    var img = new Image
+                    {
+                        Source = bmp,
+                        MaxHeight = 220,
+                        Stretch = Stretch.Uniform,
+                        Margin = new Thickness(0, 0, 0, 12)
+                    };
+                    DetailContent.Children.Add(MediaCard(img));
+                }
+                catch { /* 图片加载失败则跳过 */ }
+            }
+            else if (card.HasAudio && !string.IsNullOrEmpty(card.AudioPath))
+            {
+                var audioPanel = new StackPanel { Margin = new Thickness(0, 8, 0, 8) };
+                audioPanel.Children.Add(new TextBlock
+                {
+                    Text = "🎵",
+                    FontSize = 36,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 0, 0, 12)
+                });
+                var playBtn = new Button
+                {
+                    Content = "▶ 试听",
+                    Style = (Style)FindResource("PrimaryButton"),
+                    FontSize = 13,
+                    Padding = new Thickness(20, 6, 20, 6),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Tag = card.AudioPath,
+                    Cursor = Cursors.Hand
+                };
+                playBtn.Click += OnDetailPlayClick;
+                audioPanel.Children.Add(playBtn);
+                DetailContent.Children.Add(MediaCard(audioPanel));
+            }
+
+            // ===== 元信息（引用项目） =====
+            DetailContent.Children.Add(MetaRow("🔗 引用项目", card.RefProjects));
+
+            // ===== 分区卡片 =====
+            var hasSection = false;
             if (!string.IsNullOrWhiteSpace(card.Description))
             {
-                DetailContent.Children.Add(SectionTitle("📝 描述"));
-                DetailContent.Children.Add(SectionBody(card.Description));
+                DetailContent.Children.Add(SectionCard("📝 描述", card.Description));
+                hasSection = true;
             }
-
-            // 正向提示词
             if (!string.IsNullOrWhiteSpace(card.Prompt))
             {
-                DetailContent.Children.Add(SectionTitle("✨ 提示词（正向）"));
-                DetailContent.Children.Add(SectionBody(card.Prompt));
+                DetailContent.Children.Add(SectionCard("✨ 提示词（正向）", card.Prompt));
+                hasSection = true;
             }
-
-            // 反向提示词
             if (!string.IsNullOrWhiteSpace(card.NegativePrompt))
             {
-                DetailContent.Children.Add(SectionTitle("🚫 提示词（反向）"));
-                DetailContent.Children.Add(SectionBody(card.NegativePrompt));
+                DetailContent.Children.Add(SectionCard("🚫 提示词（反向）", card.NegativePrompt));
+                hasSection = true;
+            }
+
+            // ===== 子资产 =====
+            if (card.HasChildren)
+            {
+                var childPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+                childPanel.Children.Add(SectionHeader("🧩 子资产"));
+                var wrap = new WrapPanel();
+                foreach (var c in card.Children)
+                {
+                    var chip = new Border
+                    {
+                        Background = (Brush)FindResource("PrimaryLightBrush"),
+                        CornerRadius = new CornerRadius(12),
+                        Padding = new Thickness(10, 4, 10, 4),
+                        Margin = new Thickness(0, 0, 8, 8)
+                    };
+                    var sp = new StackPanel { Orientation = Orientation.Horizontal };
+                    sp.Children.Add(new TextBlock
+                    {
+                        Text = c.TypeDisplay,
+                        FontSize = 11,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = (Brush)FindResource("PrimaryBrush"),
+                        Margin = new Thickness(0, 0, 6, 0),
+                        VerticalAlignment = VerticalAlignment.Center
+                    });
+                    sp.Children.Add(new TextBlock
+                    {
+                        Text = c.Name,
+                        FontSize = 12,
+                        Foreground = (Brush)FindResource("TextSecondaryBrush"),
+                        VerticalAlignment = VerticalAlignment.Center
+                    });
+                    chip.Child = sp;
+                    wrap.Children.Add(chip);
+                }
+                childPanel.Children.Add(wrap);
+                DetailContent.Children.Add(childPanel);
+                hasSection = true;
             }
 
             // 无内容占位
-            if (DetailContent.Children.Count == 0)
+            if (!hasSection)
             {
                 DetailContent.Children.Add(new TextBlock
                 {
                     Text = "该资产暂无描述与提示词",
                     FontSize = 13,
-                    Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x94, 0xA6))
+                    Foreground = (Brush)FindResource("TextMutedBrush"),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 24, 0, 0)
                 });
             }
 
             DrawerAnimationHelper.Show(DetailDrawerRoot, DetailDrawerMask, DetailDrawerPanel, DrawerDirection.Right);
+        }
+
+        /// <summary>详情抽屉内试听音频</summary>
+        private void OnDetailPlayClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not string path || !File.Exists(path)) return;
+
+            if (_player.Source is not null && _player.Source.OriginalString == path)
+            {
+                if (_player.Position > TimeSpan.Zero && _player.Position < _player.NaturalDuration)
+                {
+                    _player.Pause();
+                    btn.Content = "▶ 试听";
+                }
+                else
+                {
+                    _player.Play();
+                    btn.Content = "⏸ 暂停";
+                }
+                return;
+            }
+
+            _player.Open(new Uri(path, UriKind.Absolute));
+            _player.Play();
+            btn.Content = "⏸ 暂停";
+        }
+
+        /// <summary>媒体预览卡片（图片/音频容器）</summary>
+        private static Border MediaCard(UIElement content)
+        {
+            var border = new Border
+            {
+                Background = (Brush)System.Windows.Application.Current.FindResource("PageBgBrush"),
+                BorderBrush = (Brush)System.Windows.Application.Current.FindResource("BorderBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(14),
+                Margin = new Thickness(0, 0, 0, 16)
+            };
+            border.Child = content;
+            return border;
+        }
+
+        /// <summary>元信息行（图标 + 标签 + 值）</summary>
+        private static Border MetaRow(string label, string value)
+        {
+            var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 16) };
+            sp.Children.Add(new TextBlock
+            {
+                Text = label,
+                FontSize = 12,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)System.Windows.Application.Current.FindResource("TextMutedBrush"),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0)
+            });
+            sp.Children.Add(new TextBlock
+            {
+                Text = value,
+                FontSize = 12,
+                Foreground = (Brush)System.Windows.Application.Current.FindResource("TextSecondaryBrush"),
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            });
+            return new Border { Child = sp };
+        }
+
+        /// <summary>分区标题（图标 + 文字）</summary>
+        private static StackPanel SectionHeader(string text)
+        {
+            var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            sp.Children.Add(new TextBlock
+            {
+                Text = text,
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)System.Windows.Application.Current.FindResource("TextPrimaryBrush")
+            });
+            return sp;
+        }
+
+        /// <summary>分区卡片（浅底圆角卡片 + 标题 + 正文）</summary>
+        private static Border SectionCard(string title, string body)
+        {
+            var panel = new StackPanel();
+            panel.Children.Add(SectionHeader(title));
+            panel.Children.Add(new TextBlock
+            {
+                Text = body,
+                FontSize = 13,
+                Foreground = (Brush)System.Windows.Application.Current.FindResource("TextSecondaryBrush"),
+                TextWrapping = TextWrapping.Wrap
+            });
+            return new Border
+            {
+                Background = (Brush)System.Windows.Application.Current.FindResource("PageBgBrush"),
+                BorderBrush = (Brush)System.Windows.Application.Current.FindResource("BorderBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(14),
+                Margin = new Thickness(0, 0, 0, 12),
+                Child = panel
+            };
         }
 
         /// <summary>关闭只读详情抽屉</summary>
@@ -168,30 +381,6 @@ namespace MjStudio.Host.Views
         {
             DrawerAnimationHelper.Hide(DetailDrawerRoot, DetailDrawerMask, DetailDrawerPanel, DrawerDirection.Right);
         }
-
-        /// <summary>详情抽屉小节标题</summary>
-        private static TextBlock SectionTitle(string text) => new()
-        {
-            Text = text,
-            FontSize = 13,
-            FontWeight = FontWeights.SemiBold,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x4F, 0x6E, 0xF5)),
-            Margin = new Thickness(0, 12, 0, 6)
-        };
-
-        /// <summary>详情抽屉小节正文（可选中复制）</summary>
-        private static TextBox SectionBody(string text) => new()
-        {
-            Text = text,
-            FontSize = 13,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x33, 0x3A, 0x45)),
-            TextWrapping = TextWrapping.Wrap,
-            IsReadOnly = true,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent,
-            Padding = new Thickness(0),
-            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled
-        };
 
         // ==================== 悬停预览（表格名称列） ====================
 
