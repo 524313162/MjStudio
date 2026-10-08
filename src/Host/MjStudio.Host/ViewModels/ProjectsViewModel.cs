@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using MjStudio.Application.Shared.Services;
 using MjStudio.Domain.Models;
@@ -58,15 +60,23 @@ namespace MjStudio.Host.ViewModels
         private AspectRatioEnum _formAspectRatio = AspectRatioEnum.Portrait916;
         public AspectRatioEnum FormAspectRatio { get => _formAspectRatio; set => SetProperty(ref _formAspectRatio, value); }
         public AspectRatioEnum[] AspectRatios { get; } = Enum.GetValues<AspectRatioEnum>();
-        private string _formTargetPlatform = "抖音";
-        public string FormTargetPlatform { get => _formTargetPlatform; set => SetProperty(ref _formTargetPlatform, value); }
+        // —— 多选下拉：目标平台 / 题材（值集合）；目标受众为单选 ——
         public string[] PlatformOptions { get; } = { "抖音", "快手", "B站", "视频号", "YouTube", "其他" };
-        private string _formGenre = "都市";
-        public string FormGenre { get => _formGenre; set => SetProperty(ref _formGenre, value); }
         public string[] GenreOptions { get; } = { "都市", "玄幻", "仙侠", "科幻", "悬疑", "甜宠", "逆袭", "其他" };
+        public string[] AudienceOptions { get; } = { "成人", "青少年", "儿童", "全年龄" };
+
+        private ObservableCollection<SelectableItem> _platformItems = new();
+        public ObservableCollection<SelectableItem> PlatformItems { get => _platformItems; }
+        private ObservableCollection<SelectableItem> _genreItems = new();
+        public ObservableCollection<SelectableItem> GenreItems { get => _genreItems; }
         private string _formAudience = "成人";
         public string FormAudience { get => _formAudience; set => SetProperty(ref _formAudience, value); }
-        public string[] AudienceOptions { get; } = { "成人", "青少年", "儿童", "全年龄" };
+        private bool _isPlatformOpen;
+        public bool IsPlatformOpen { get => _isPlatformOpen; set => SetProperty(ref _isPlatformOpen, value); }
+        private bool _isGenreOpen;
+        public bool IsGenreOpen { get => _isGenreOpen; set => SetProperty(ref _isGenreOpen, value); }
+        public string PlatformDisplay => JoinSelected(_platformItems);
+        public string GenreDisplay => JoinSelected(_genreItems);
         private string _formArtStyle = "真人电影";
         public string FormArtStyle { get => _formArtStyle; set => SetProperty(ref _formArtStyle, value); }
         public string[] ArtStyleOptions { get; } = { "真人电影", "国漫", "日漫", "3D", "水墨", "像素", "其他" };
@@ -78,11 +88,16 @@ namespace MjStudio.Host.ViewModels
         public string[] OriginalOrAdaptedOptions { get; } = { "原创", "改编" };
         private string _formBgmStyle = "";
         public string FormBgmStyle { get => _formBgmStyle; set => SetProperty(ref _formBgmStyle, value); }
+        private string _formDeliverables = "";
+        public string FormDeliverables { get => _formDeliverables; set => SetProperty(ref _formDeliverables, value); }
         private bool _formHasOpeningEnding;
         public bool FormHasOpeningEnding { get => _formHasOpeningEnding; set => SetProperty(ref _formHasOpeningEnding, value); }
         private ProjectStatusEnum _formStatus = ProjectStatusEnum.InProgress;
         public ProjectStatusEnum FormStatus { get => _formStatus; set => SetProperty(ref _formStatus, value); }
         public ProjectStatusEnum[] StatusOptions { get; } = Enum.GetValues<ProjectStatusEnum>();
+        private StageEnum _formCurrentStage = StageEnum.Init;
+        public StageEnum FormCurrentStage { get => _formCurrentStage; set => SetProperty(ref _formCurrentStage, value); }
+        public StageEnum[] StageOptions { get; } = Enum.GetValues<StageEnum>();
 
         // ===== 命令 =====
         public RelayCommand RefreshCommand { get; }
@@ -161,6 +176,9 @@ namespace MjStudio.Host.ViewModels
         public void OpenCreateDialog()
         {
             NewProjectName = "";
+            BuildSelectableItems(PlatformItems, PlatformOptions, "抖音");
+            BuildSelectableItems(GenreItems, GenreOptions, "都市");
+            FormAudience = "成人";
             View?.ShowCreateDialog();
         }
 
@@ -218,6 +236,45 @@ namespace MjStudio.Host.ViewModels
             View?.HideDrawer();
         }
 
+        // ===== 多选下拉辅助 =====
+        private void BuildSelectableItems(ObservableCollection<SelectableItem> target, string[] options, string? stored)
+        {
+            target.Clear();
+            var selected = new HashSet<string>(StringComparer.Ordinal);
+            if (!string.IsNullOrWhiteSpace(stored))
+                foreach (var raw in stored.Split(new[] { '/', '、', ',', '，' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var t = raw.Trim();
+                    if (t.Length > 0) selected.Add(t);
+                }
+            var all = new List<string>(options);
+            foreach (var s in selected)
+                if (!all.Contains(s)) all.Add(s);
+            foreach (var a in all)
+            {
+                var item = new SelectableItem { Text = a, IsSelected = selected.Contains(a) };
+                item.PropertyChanged += (_, _) =>
+                {
+                    OnPropertyChanged(nameof(PlatformDisplay));
+                    OnPropertyChanged(nameof(GenreDisplay));
+                };
+                target.Add(item);
+            }
+        }
+
+        private static string JoinSelected(ObservableCollection<SelectableItem> items)
+        {
+            var sel = items.Where(i => i.IsSelected).Select(i => i.Text).ToArray();
+            return sel.Length == 0 ? "请选择（可多选）" : string.Join(" / ", sel);
+        }
+
+        private static string? FirstToken(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+            var parts = s.Split(new[] { '/', '、', ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 0 ? parts[0].Trim() : s.Trim();
+        }
+
         private void LoadForm(Project p)
         {
             FormStoryName = p.StoryName ?? "";
@@ -226,15 +283,17 @@ namespace MjStudio.Host.ViewModels
             FormTotalEpisodes = p.TotalEpisodes.ToString();
             FormEpisodeDuration = p.EpisodeDuration.ToString();
             FormAspectRatio = p.AspectRatio;
-            FormTargetPlatform = p.TargetPlatform ?? "";
-            FormGenre = p.Genre ?? "";
-            FormAudience = p.Audience ?? "";
+            BuildSelectableItems(PlatformItems, PlatformOptions, p.TargetPlatform);
+            BuildSelectableItems(GenreItems, GenreOptions, p.Genre);
+            FormAudience = FirstToken(p.Audience) ?? "成人";
             FormArtStyle = p.ArtStyle ?? "";
             FormVoiceLanguage = p.VoiceLanguage ?? "";
             FormOriginalOrAdapted = string.IsNullOrWhiteSpace(p.OriginalOrAdapted) ? "原创" : p.OriginalOrAdapted;
             FormBgmStyle = p.BgmStyle ?? "";
             FormHasOpeningEnding = p.HasOpeningEnding;
             FormStatus = p.Status;
+            FormDeliverables = p.Deliverables ?? "";
+            FormCurrentStage = p.CurrentStage;
         }
 
         private void ClearForm()
@@ -242,11 +301,15 @@ namespace MjStudio.Host.ViewModels
             FormStoryName = ""; FormWorldview = ""; FormDescription = "";
             FormTotalEpisodes = "20"; FormEpisodeDuration = "120";
             FormAspectRatio = AspectRatioEnum.Landscape169;
-            FormTargetPlatform = "抖音"; FormGenre = "都市"; FormAudience = "成人";
+            BuildSelectableItems(PlatformItems, PlatformOptions, "抖音");
+            BuildSelectableItems(GenreItems, GenreOptions, "都市");
+            FormAudience = "成人";
             FormArtStyle = "真人电影"; FormVoiceLanguage = "中文普通话";
             FormOriginalOrAdapted = "原创"; FormBgmStyle = "";
             FormHasOpeningEnding = false;
             FormStatus = ProjectStatusEnum.InProgress;
+            FormDeliverables = "";
+            FormCurrentStage = StageEnum.Init;
         }
 
         /// <summary>确认新建项目（弹窗内点「创建」）</summary>
@@ -272,9 +335,9 @@ namespace MjStudio.Host.ViewModels
                     TotalEpisodes = 20,
                     EpisodeDuration = 120,
                     AspectRatio = AspectRatioEnum.Landscape169,
-                    TargetPlatform = "抖音",
-                    Genre = "都市",
-                    Audience = "成人",
+                    TargetPlatform = JoinSelected(PlatformItems),
+                    Genre = JoinSelected(GenreItems),
+                    Audience = FormAudience,
                     ArtStyle = "真人电影",
                     VoiceLanguage = "中文普通话",
                     OriginalOrAdapted = "原创"
@@ -308,8 +371,8 @@ namespace MjStudio.Host.ViewModels
                 if (int.TryParse(FormTotalEpisodes, out var te)) SelectedProject.TotalEpisodes = te;
                 if (int.TryParse(FormEpisodeDuration, out var ed)) SelectedProject.EpisodeDuration = ed;
                 SelectedProject.AspectRatio = FormAspectRatio;
-                SelectedProject.TargetPlatform = FormTargetPlatform;
-                SelectedProject.Genre = FormGenre;
+                SelectedProject.TargetPlatform = JoinSelected(PlatformItems);
+                SelectedProject.Genre = JoinSelected(GenreItems);
                 SelectedProject.Audience = FormAudience;
                 SelectedProject.ArtStyle = FormArtStyle;
                 SelectedProject.VoiceLanguage = FormVoiceLanguage;
@@ -317,6 +380,8 @@ namespace MjStudio.Host.ViewModels
                 SelectedProject.BgmStyle = FormBgmStyle;
                 SelectedProject.HasOpeningEnding = FormHasOpeningEnding;
                 SelectedProject.Status = FormStatus;
+                SelectedProject.Deliverables = FormDeliverables;
+                SelectedProject.CurrentStage = FormCurrentStage;
 
                 _projects.UpdateAsync(SelectedProject).GetAwaiter().GetResult();
                 Refresh();

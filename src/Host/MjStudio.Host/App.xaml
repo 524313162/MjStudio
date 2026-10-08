@@ -24,6 +24,7 @@
                         <conv:BoolToTextConverter x:Key="BoolToText"/>
                         <conv:CharCountConverter x:Key="CharCount"/>
                         <conv:MultiStringEqualsToVisibilityConverter x:Key="MultiEqVis"/>
+                        <conv:TagSplitConverter x:Key="TagSplit"/>
                         <conv:RefProjectsConverter x:Key="RefProjects"/>
                         <conv:ImagePathConverter x:Key="ImagePath"/>
 
