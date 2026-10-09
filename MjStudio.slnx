@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/00files/" />
+  <Folder Name="/00files/docs/" />
+  <Folder Name="/00files/skills/" />
   <Folder Name="/src/" />
   <Folder Name="/src/Application/">
     <Project Path="src/Application/MjStudio.Application.Shared/MjStudio.Application.Shared.csproj" />
@@ -16,8 +19,5 @@
   </Folder>
   <Folder Name="/src/WebApi/">
     <Project Path="src/WebApi/MjStudio.WebApi/MjStudio.WebApi.csproj" />
-  </Folder>
-  <Folder Name="/_tmpcheck/">
-    <Project Path="_tmpcheck/check.csproj" />
   </Folder>
 </Solution>
