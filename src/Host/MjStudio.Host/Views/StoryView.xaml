@@ -278,7 +278,6 @@
                     <Grid Visibility="{Binding Selected, Converter={StaticResource NullToVisInverse}}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
@@ -329,93 +328,8 @@
                             </Grid>
                         </Border>
 
-                        <!-- 角色资产区 -->
-                        <Border Grid.Row="1"
-                                Margin="0,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="本集角色"
-                                           Style="{StaticResource SectionTitle}"
-                                           Margin="0,0,0,10"/>
-                                <!-- 固定高度，超出横向滚动，避免角色过多撑高挤掉正文 -->
-                                <Grid Height="196">
-                                    <ScrollViewer x:Name="CharacterScroll"
-                                                  HorizontalScrollBarVisibility="Auto"
-                                                  VerticalScrollBarVisibility="Disabled"
-                                                  PreviewMouseWheel="OnCharacterScrollWheel">
-                                        <ItemsControl ItemsSource="{Binding CharacterAssets}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Orientation="Horizontal"/>
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Background="{StaticResource PageBgBrush}"
-                                                            CornerRadius="10"
-                                                            Padding="10"
-                                                            Margin="0,0,10,10"
-                                                            Width="150">
-                                                        <StackPanel>
-                                                            <!-- 角色头像 -->
-                                                            <Border Width="120"
-                                                                    Height="120"
-                                                                    CornerRadius="8"
-                                                                    Background="White"
-                                                                    HorizontalAlignment="Center"
-                                                                    Margin="0,0,0,8">
-                                                                <Grid>
-                                                                    <Image Source="{Binding ImagePath, Converter={StaticResource ImagePath}}"
-                                                                           Stretch="UniformToFill"
-                                                                           Width="120"
-                                                                           Height="120"/>
-                                                                    <!-- 缺图占位 -->
-                                                                    <StackPanel Visibility="{Binding HasImage, Converter={StaticResource InverseBool}}"
-                                                                                HorizontalAlignment="Center"
-                                                                                VerticalAlignment="Center">
-                                                                        <TextBlock Text="👤"
-                                                                                   FontSize="36"
-                                                                                   HorizontalAlignment="Center"/>
-                                                                        <TextBlock Text="暂无图片"
-                                                                                   FontSize="10"
-                                                                                   Foreground="{StaticResource TextMutedBrush}"
-                                                                                   HorizontalAlignment="Center"
-                                                                                   Margin="0,4,0,0"/>
-                                                                    </StackPanel>
-                                                                </Grid>
-                                                            </Border>
-                                                            <!-- 名称 -->
-                                                            <TextBlock Text="{Binding Name}"
-                                                                       FontWeight="SemiBold"
-                                                                       FontSize="13"
-                                                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                                                       HorizontalAlignment="Center"
-                                                                       TextTrimming="CharacterEllipsis"/>
-                                                            <!-- 描述 -->
-                                                            <TextBlock Text="{Binding Description}"
-                                                                       FontSize="11"
-                                                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                                                       TextWrapping="Wrap"
-                                                                       TextTrimming="CharacterEllipsis"
-                                                                       MaxHeight="32"
-                                                                       Margin="0,4,0,0"/>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </ScrollViewer>
-                                    <TextBlock Text="暂无角色资产，请先在「资产」页创建角色"
-                                               Style="{StaticResource EmptyHint}"
-                                               FontSize="12"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Visibility="{Binding CharacterAssets.Count, Converter={StaticResource CountToVis}}"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
                         <!-- 正文 -->
-                        <Border Grid.Row="2"
+                        <Border Grid.Row="1"
                                 Background="#FAFBFC"
                                 CornerRadius="8"
                                 BorderBrush="{StaticResource BorderBrush}"
@@ -432,9 +346,9 @@
                         </Border>
 
                         <!-- 底部提示 -->
-                        <Grid Grid.Row="3"
+                        <Grid Grid.Row="2"
                               Margin="0,8,0,0">
-                            <TextBlock Text="支持 Markdown 格式 · 角色/场景/道具等资产由分镜环节从剧本提取"
+                            <TextBlock Text="支持 Markdown 格式 · 角色/场景/BGM/音效等资产在「分镜」环节按镜头绑定"
                                        Foreground="{StaticResource TextMutedBrush}"
                                        FontSize="11"
                                        HorizontalAlignment="Left"/>

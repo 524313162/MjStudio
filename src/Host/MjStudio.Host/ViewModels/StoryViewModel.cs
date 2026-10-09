@@ -1,25 +1,22 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using MjStudio.Application.Shared.Services;
 using MjStudio.Domain.Models;
 using MjStudio.Domain.Shared;
-using MjStudio.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MjStudio.Host.ViewModels
 {
     /// <summary>
-    /// 剧本页 ViewModel：按集展示剧本（标题/角色/正文/时长），支持新建与编辑保存。
-    /// 角色/配角资产从资产库真实加载（含图片），供剧本页角色资产区展示。
+    /// 剧本页 ViewModel：按集展示剧本（标题/正文/时长），支持新建与编辑保存。
+    /// 资产绑定统一在「分镜」环节按镜头进行，剧本页不再绑定资产。
     /// </summary>
     public class StoryViewModel : ViewModelBase
     {
         private readonly IServiceProvider _services;
         private readonly IStoryService _stories;
         private readonly IResourceService _resources;
-        private readonly IAssetService _assets;
-        private readonly IProjectService _projects;
-        private readonly ResourceStorageService _resourceStorage;
         private readonly CurrentProject _current;
 
         public ObservableCollection<Story> Stories { get; } = new();
@@ -27,11 +24,12 @@ namespace MjStudio.Host.ViewModels
         /// <summary>全部剧本（未过滤）</summary>
         private readonly List<Story> _allStories = new();
 
-        /// <summary>角色资产（角色/配角，从资产库加载）</summary>
-        public ObservableCollection<StoryAssetItem> CharacterAssets { get; } = new();
-
         private Story? _selected;
-        public Story? Selected { get => _selected; set => SetProperty(ref _selected, value); }
+        public Story? Selected
+        {
+            get => _selected;
+            set => SetProperty(ref _selected, value);
+        }
 
         // 搜索
         private string _searchTitle = "";
@@ -48,9 +46,6 @@ namespace MjStudio.Host.ViewModels
             _services = services;
             _stories = services.GetRequiredService<IStoryService>();
             _resources = services.GetRequiredService<IResourceService>();
-            _assets = services.GetRequiredService<IAssetService>();
-            _projects = services.GetRequiredService<IProjectService>();
-            _resourceStorage = services.GetRequiredService<ResourceStorageService>();
             _current = services.GetRequiredService<CurrentProject>();
 
             RefreshCommand = new RelayCommand(Refresh);
@@ -75,7 +70,6 @@ namespace MjStudio.Host.ViewModels
                 catch { /* 未加载项目时忽略 */ }
             }
             ApplyFilter();
-            LoadCharacterAssets();
         }
 
         /// <summary>按标题关键字过滤列表（回车触发）</summary>
@@ -97,24 +91,6 @@ namespace MjStudio.Host.ViewModels
 
             // 默认选中第一集（或保持之前选中项）
             Selected = Stories.FirstOrDefault(s => s.Id == prevId) ?? Stories.FirstOrDefault();
-        }
-
-        /// <summary>加载角色/配角资产（从资产库，含图片路径）</summary>
-        private void LoadCharacterAssets()
-        {
-            CharacterAssets.Clear();
-            if (!_current.IsLoaded) return;
-            try
-            {
-                var projectNames = _projects.ListProjectNamesAsync().GetAwaiter().GetResult();
-                var list = _assets.GetAllWithRefsAsync().GetAwaiter().GetResult();
-                // 只取角色类型（角色/配角），排除子资产
-                foreach (var a in list.Where(x => x.AssetType == AssetTypeEnum.Character && x.ParentAssetId is null))
-                {
-                    CharacterAssets.Add(new StoryAssetItem(a, _resourceStorage, projectNames));
-                }
-            }
-            catch { /* 忽略 */ }
         }
 
         private void Create()

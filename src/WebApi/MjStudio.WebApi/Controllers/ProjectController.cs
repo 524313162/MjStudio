@@ -39,6 +39,11 @@ namespace MjStudio.WebApi.Controllers
             if (string.IsNullOrWhiteSpace(req.Name))
                 return BadRequest(new { message = "项目名不能为空" });
 
+            // 重名校验：项目名已存在则拒绝创建
+            var existing = await _projects.GetByNameAsync(req.Name);
+            if (existing is not null)
+                return Conflict(new { message = $"项目「{req.Name}」已存在" });
+
             var project = new Project
             {
                 Name = req.Name,

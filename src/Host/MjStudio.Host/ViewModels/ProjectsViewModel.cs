@@ -331,7 +331,9 @@ namespace MjStudio.Host.ViewModels
                 return;
             }
             var name = NewProjectName.Trim();
-            if (ProjectCards.Any(p => p.Name == name))
+            // 重名校验：查数据库（比只查已加载卡片更可靠，避免卡片未刷新时漏判）
+            var existing = _projects.GetByNameAsync(name).GetAwaiter().GetResult();
+            if (existing is not null)
             {
                 MessageBox.Show($"项目「{name}」已存在", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;

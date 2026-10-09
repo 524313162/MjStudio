@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace MjStudio.Domain.Models
 {
@@ -9,6 +10,9 @@ namespace MjStudio.Domain.Models
     public class ShotAssetRef : BaseEntity
     {
         public long ShotId { get; set; }
+
+        /// <summary>所属镜头（JsonIgnore 打破 Shot.AssetRefs ↔ ShotAssetRef.Shot 循环引用）</summary>
+        [JsonIgnore]
         public Shot? Shot { get; set; }
 
         public long AssetId { get; set; }

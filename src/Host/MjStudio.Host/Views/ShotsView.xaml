@@ -452,15 +452,12 @@
                                                                         <ColumnDefinition Width="*"/>
                                                                         <ColumnDefinition Width="16"/>
                                                                         <ColumnDefinition Width="*"/>
-                                                                        <ColumnDefinition Width="16"/>
-                                                                        <ColumnDefinition Width="*"/>
                                                                 </Grid.ColumnDefinitions>
                                                                 <StackPanel Grid.Column="0">
                                                                         <TextBlock Text="运镜"
                                                                                    Style="{StaticResource FieldLabel}"/>
-                                                                        <hc:ComboBox ItemsSource="{Binding CameraOptions}"
-                                                                                     SelectedItem="{Binding FormCamera, UpdateSourceTrigger=PropertyChanged}"
-                                                                                     hc:InfoElement.Placeholder="选择运镜方式"/>
+                                                                        <hc:TextBox Text="{Binding FormCamera, UpdateSourceTrigger=PropertyChanged}"
+                                                                                    hc:InfoElement.Placeholder="如：全景+固定机位+缓慢推近"/>
                                                                 </StackPanel>
                                                                 <StackPanel Grid.Column="2">
                                                                         <TextBlock Text="景别"
@@ -468,13 +465,6 @@
                                                                         <hc:ComboBox ItemsSource="{Binding ShotSizeOptions}"
                                                                                      SelectedItem="{Binding FormShotSize, UpdateSourceTrigger=PropertyChanged}"
                                                                                      hc:InfoElement.Placeholder="选择景别"/>
-                                                                </StackPanel>
-                                                                <StackPanel Grid.Column="4">
-                                                                        <TextBlock Text="机位朝向"
-                                                                                   Style="{StaticResource FieldLabel}"/>
-                                                                        <hc:ComboBox ItemsSource="{Binding CameraFacingOptions}"
-                                                                                     SelectedItem="{Binding FormCameraFacing, UpdateSourceTrigger=PropertyChanged}"
-                                                                                     hc:InfoElement.Placeholder="选择机位朝向"/>
                                                                 </StackPanel>
                                                         </Grid>
 
@@ -596,6 +586,109 @@
                                                                                     Background="Transparent"
                                                                                     Padding="0"
                                                                                     hc:InfoElement.Placeholder="不希望出现的内容，可写中文或英文"/>
+                                                                </StackPanel>
+                                                        </Border>
+
+                                                        <!-- 本镜资产（动态绑定/解绑） -->
+                                                        <TextBlock Text="本镜资产"
+                                                                   Style="{StaticResource SectionTitle}"/>
+                                                        <Border Background="#FAFBFC"
+                                                                CornerRadius="8"
+                                                                BorderBrush="{StaticResource BorderBrush}"
+                                                                BorderThickness="1"
+                                                                Padding="12,10"
+                                                                Margin="0,0,0,16">
+                                                                <StackPanel>
+                                                                        <Button Content="＋ 绑定资产"
+                                                                                Style="{StaticResource SecondaryButton}"
+                                                                                Command="{Binding BindAssetCommand}"
+                                                                                HorizontalAlignment="Left"
+                                                                                FontSize="13"
+                                                                                Margin="0,0,0,10"/>
+                                                                        <ItemsControl ItemsSource="{Binding ShotAssets}">
+                                                                                <ItemsControl.ItemsPanel>
+                                                                                        <ItemsPanelTemplate>
+                                                                                                <WrapPanel/>
+                                                                                        </ItemsPanelTemplate>
+                                                                                </ItemsControl.ItemsPanel>
+                                                                                <ItemsControl.ItemTemplate>
+                                                                                        <DataTemplate>
+                                                                                                <Border Background="White"
+                                                                                                        CornerRadius="8"
+                                                                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                                                                        BorderThickness="1"
+                                                                                                        Padding="8"
+                                                                                                        Margin="0,0,8,8"
+                                                                                                        Width="140">
+                                                                                                        <Grid>
+                                                                                                                <StackPanel>
+                                                                                                                        <!-- 类型标签 -->
+                                                                                                                        <Border Background="{StaticResource PrimaryLightBrush}"
+                                                                                                                                CornerRadius="4"
+                                                                                                                                Padding="6,1"
+                                                                                                                                HorizontalAlignment="Left"
+                                                                                                                                Margin="0,0,0,6">
+                                                                                                                                <TextBlock Text="{Binding TypeDisplay}"
+                                                                                                                                           FontSize="10"
+                                                                                                                                           Foreground="{StaticResource PrimaryBrush}"/>
+                                                                                                                        </Border>
+                                                                                                                        <!-- 名称 -->
+                                                                                                                        <TextBlock Text="{Binding Name}"
+                                                                                                                                   FontWeight="SemiBold"
+                                                                                                                                   FontSize="12"
+                                                                                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                                                                        <!-- 参考图序号 -->
+                                                                                                                        <TextBlock Text="{Binding MediaIndexText}"
+                                                                                                                                   FontSize="10"
+                                                                                                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                                                                                                   Margin="0,4,0,0"/>
+                                                                                                                </StackPanel>
+                                                                                                                <!-- 解绑按钮 -->
+                                                                                                                <Button Content="×"
+                                                                                                                        Width="20"
+                                                                                                                        Height="20"
+                                                                                                                        FontSize="13"
+                                                                                                                        FontWeight="Bold"
+                                                                                                                        Foreground="White"
+                                                                                                                        Background="#E74C3C"
+                                                                                                                        BorderThickness="0"
+                                                                                                                        Cursor="Hand"
+                                                                                                                        HorizontalAlignment="Right"
+                                                                                                                        VerticalAlignment="Top"
+                                                                                                                        Margin="0,-4,-4,0"
+                                                                                                                        ToolTip="取消绑定"
+                                                                                                                        Command="{Binding DataContext.UnbindAssetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                                                        CommandParameter="{Binding}">
+                                                                                                                        <Button.Template>
+                                                                                                                                <ControlTemplate TargetType="Button">
+                                                                                                                                        <Border x:Name="Bd"
+                                                                                                                                                Background="{TemplateBinding Background}"
+                                                                                                                                                CornerRadius="10">
+                                                                                                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                                                                                                                  VerticalAlignment="Center"/>
+                                                                                                                                        </Border>
+                                                                                                                                        <ControlTemplate.Triggers>
+                                                                                                                                                <Trigger Property="IsMouseOver"
+                                                                                                                                                                Value="True">
+                                                                                                                                                        <Setter TargetName="Bd"
+                                                                                                                                                                        Property="Opacity"
+                                                                                                                                                                        Value="0.8"/>
+                                                                                                                                                </Trigger>
+                                                                                                                                        </ControlTemplate.Triggers>
+                                                                                                                                </ControlTemplate>
+                                                                                                                        </Button.Template>
+                                                                                                                </Button>
+                                                                                                        </Grid>
+                                                                                                </Border>
+                                                                                        </DataTemplate>
+                                                                                </ItemsControl.ItemTemplate>
+                                                                        </ItemsControl>
+                                                                        <TextBlock Text="暂无绑定资产，点击「＋ 绑定资产」添加"
+                                                                                   Style="{StaticResource EmptyHint}"
+                                                                                   FontSize="12"
+                                                                                   HorizontalAlignment="Center"
+                                                                                   Visibility="{Binding ShotAssets.Count, Converter={StaticResource CountToVis}}"/>
                                                                 </StackPanel>
                                                         </Border>
                                                 </StackPanel>

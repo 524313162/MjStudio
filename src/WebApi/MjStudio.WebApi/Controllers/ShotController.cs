@@ -114,6 +114,17 @@ namespace MjStudio.WebApi.Controllers
             return Ok(await _shots.GetShotAsync(id));
         }
 
+        /// <summary>设置镜头资产引用（参考图排定，全量覆盖）</summary>
+        [HttpPut("shots/{id:long}/asset-refs")]
+        public async Task<IActionResult> SetAssetRefs(long id, [FromBody] ShotAssetRefsRequest req)
+        {
+            var refs = (req.Refs ?? new List<ShotAssetRefItem>())
+                .Select(r => (r.AssetId, r.MediaIndex, r.RefType ?? ""))
+                .ToList();
+            await _shots.SetAssetRefsAsync(id, refs);
+            return Ok(await _shots.GetShotAsync(id));
+        }
+
         [HttpDelete("shots/{id:long}")]
         public async Task<IActionResult> DeleteShot(long id)
         {

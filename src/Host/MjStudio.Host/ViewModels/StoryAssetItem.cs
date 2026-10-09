@@ -16,6 +16,9 @@ namespace MjStudio.Host.ViewModels
 
         public Asset Asset { get; }
 
+        /// <summary>资产 ID（用于 CharacterList 关联）</summary>
+        public long AssetId => Asset.Id;
+
         public StoryAssetItem(Asset asset, ResourceStorageService resources, IReadOnlyList<string> projectNames)
         {
             Asset = asset;

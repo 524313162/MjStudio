@@ -62,6 +62,20 @@ namespace MjStudio.WebApi.Dtos
         public string? NegativePromptEn { get; set; }
     }
 
+    /// <summary>镜头资产引用项（参考图排定：1=场景组合图，2~N=角色/场景/道具）</summary>
+    public class ShotAssetRefItem
+    {
+        public long AssetId { get; set; }
+        public int MediaIndex { get; set; }
+        public string RefType { get; set; } = "";
+    }
+
+    /// <summary>设置镜头资产引用请求（全量覆盖）</summary>
+    public class ShotAssetRefsRequest
+    {
+        public List<ShotAssetRefItem> Refs { get; set; } = new();
+    }
+
     /// <summary>剧本创建/更新请求</summary>
     public class StoryUpsertRequest
     {

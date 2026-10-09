@@ -14,7 +14,7 @@
 | 中文处理       | 请求体 UTF-8（Python 用 `ensure_ascii=False`）；URL 路径中的中文项目名需 URL 编码（`urllib.parse.quote`）          |
 | 当前项目上下文 | stories / assets / episodes / shots 等接口都依赖「当前项目」，必须先 `POST /api/projects/load/{name}` 加载（切换） |
 | 成功响应       | HTTP 200，响应体为 JSON（对象或数组）                                                                              |
-| 错误响应       | 400=参数校验失败 / 404=项目未 load 或 id 不存在，响应体含 `message` 字段                                           |
+| 错误响应       | 400=参数校验失败 / 404=项目未 load 或 id 不存在 / 409=资源冲突（如项目名已存在），响应体含 `message` 字段          |
 | 时间字段       | `createdTime` / `updatedTime` 为 **Unix 毫秒**时间戳                                                               |
 
 ### 通用返回对象
@@ -58,29 +58,29 @@ GET /api/projects
 - **`POST /api/projects`**
 - 请求体：CreateProjectRequest（见下）
 - 返回：Project 对象
-- 错误：`name` 为空 → 400 `{ "message": "项目名不能为空" }`
+- 错误：`name` 为空 → 400 `{ "message": "项目名不能为空" }`；项目名已存在 → 409 `{ "message": "项目「xxx」已存在" }`
 
 **CreateProjectRequest**
 
-| 字段                | 类型   | 必填 | 说明                               |
-| ------------------- | ------ | ---- | ---------------------------------- |
-| `name`              | string | 是   | 项目名（唯一，创建后不可改）       |
-| `storyName`         | string | 否   | 故事名                             |
-| `worldview`         | string | 否   | 世界观                             |
-| `description`       | string | 否   | 项目描述                           |
-| `totalEpisodes`     | int    | 否   | 总集数                             |
-| `episodeDuration`   | int    | 否   | 每集时长（秒，默认 120）           |
-| `aspectRatio`       | int    | 否   | 画幅：0=16:9 横屏，1=9:16 竖屏     |
-| `targetPlatform`    | string | 否   | 目标平台（抖音/快手/B站等）        |
-| `genre`             | string | 否   | 题材                               |
-| `audience`          | string | 否   | 目标受众                           |
-| `artStyle`          | string | 否   | 美术风格                           |
-| `voiceLanguage`     | string | 否   | 配音语言                           |
-| `originalOrAdapted` | string | 否   | 原创/改编                          |
-| `bgmStyle`          | string | 否   | BGM 风格                           |
-| `hasOpeningEnding`  | bool   | 否   | 是否有片头片尾（默认 false）       |
-| `deliverables`      | string | 否   | 交付物                             |
-| `status`            | int    | 否   | 状态：0=进行中，1=已完结（默认 0） |
+| 字段                | 类型   | 必填 | 说明                                                 |
+| ------------------- | ------ | ---- | ---------------------------------------------------- |
+| `name`              | string | 是   | 项目名（唯一，创建后不可改）                         |
+| `storyName`         | string | 否   | 故事名                                               |
+| `worldview`         | string | 否   | 世界观                                               |
+| `description`       | string | 否   | 项目描述                                             |
+| `totalEpisodes`     | int    | 否   | 总集数                                               |
+| `episodeDuration`   | int    | 否   | 每集时长（秒，默认 120）                             |
+| `aspectRatio`       | int    | 否   | 画幅：1=9:16 竖屏，2=16:9 横屏，3=1:1 方形（默认 1） |
+| `targetPlatform`    | string | 否   | 目标平台（抖音/快手/B站等）                          |
+| `genre`             | string | 否   | 题材                                                 |
+| `audience`          | string | 否   | 目标受众                                             |
+| `artStyle`          | string | 否   | 美术风格                                             |
+| `voiceLanguage`     | string | 否   | 配音语言                                             |
+| `originalOrAdapted` | string | 否   | 原创/改编                                            |
+| `bgmStyle`          | string | 否   | BGM 风格                                             |
+| `hasOpeningEnding`  | bool   | 否   | 是否有片头片尾（默认 false）                         |
+| `deliverables`      | string | 否   | 交付物                                               |
+| `status`            | int    | 否   | 状态：0=进行中，1=已完结（默认 0）                   |
 
 **示例（实测）**
 
@@ -424,25 +424,323 @@ POST /api/assets
 ## 六、工作流（/api/workflow）
 
 > 图片/视频/配音/合成等生成环节走工作流 API，ComfyUI 需已启动。
+> 工作流模板存放在程序目录 `workflows/` 下（文件名不含 `.json`）。
+> 两种提交方式：**参数化发起**（`POST /api/workflow`，注入节点参数后异步执行，返回 `taskId` 轮询）与**原始提交**（`POST /api/workflow/raw`，直接提交完整 JSON，同步返回 ComfyUI 原始响应）。
 
-| 方法   | 路径                       | 参数                                       | 说明                                                               |
-| ------ | -------------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
-| GET    | `/api/workflow/file?name=` | `name` 模板名                              | 读取工作流模板 JSON                                                |
-| POST   | `/api/workflow/file`       | 请求体 `{ "name": "...", "json": "..." }`  | 保存工作流（校验+规范化缩进）                                      |
-| DELETE | `/api/workflow/file?name=` | `name` 模板名                              | 删除工作流                                                         |
-| POST   | `/api/workflow/raw`        | 请求体 `{ "json": "..." }` 完整工作流 JSON | 直接提交到 ComfyUI，返回原始响应（含 `prompt_id` / `node_errors`） |
+### 6.1 列出可用工作流模板
+
+- **`GET /api/workflow`**
+- 参数：无
+- 返回：`string[]` 模板名数组（不含 `.json`）
+
+### 6.2 读取工作流模板
+
+- **`GET /api/workflow/file?name={name}`**
+- Query 参数：`name` 模板名（必填）
+- 返回：WorkflowFileResponse（见下）
+- 错误：缺 `name` → 400；模板不存在 → 404
+
+### 6.3 保存工作流模板（新建或覆盖）
+
+- **`POST /api/workflow/file`**
+- 请求体：WorkflowFileRequest
+- 返回：WorkflowFileResponse（`content` 为规范化缩进后的 JSON）
+- 错误：缺 `name` → 400；JSON 非法 → 400
+
+**WorkflowFileRequest**
+
+| 字段      | 类型   | 必填     | 说明                   |
+| --------- | ------ | -------- | ---------------------- |
+| `name`    | string | 是       | 模板名（不含 `.json`） |
+| `content` | string | 保存时是 | 工作流 JSON 内容       |
+
+**WorkflowFileResponse**
+
+| 字段      | 类型   | 说明                   |
+| --------- | ------ | ---------------------- |
+| `success` | bool   | 是否成功               |
+| `message` | string | 失败原因（成功时为空） |
+| `name`    | string | 模板名                 |
+| `content` | string | 工作流 JSON 内容       |
+
+### 6.4 删除工作流模板
+
+- **`DELETE /api/workflow/file?name={name}`**
+- Query 参数：`name` 模板名（必填）
+- 返回：WorkflowFileResponse（`message`="已删除"）
+- 错误：缺 `name` → 400；模板不存在 → 400
+
+### 6.5 直接提交完整工作流 JSON（同步）
+
+- **`POST /api/workflow/raw`**
+- 请求体：WorkflowRawRequest
+- 返回：WorkflowRawResponse（`result` 为 ComfyUI 原始响应 JSON 字符串，含 `prompt_id` / `node_errors`）
+- 错误：缺内容 → 400；ComfyUI 不可达 → 400
+
+**WorkflowRawRequest**
+
+| 字段      | 类型   | 必填 | 说明            |
+| --------- | ------ | ---- | --------------- |
+| `content` | string | 是   | 完整工作流 JSON |
+
+**WorkflowRawResponse**
+
+| 字段      | 类型   | 说明                          |
+| --------- | ------ | ----------------------------- |
+| `success` | bool   | 是否成功                      |
+| `message` | string | 失败原因                      |
+| `result`  | string | ComfyUI 原始响应 JSON（美化） |
+
+### 6.6 发起工作流（参数化，异步）
+
+- **`POST /api/workflow`**
+- 请求体：WorkflowRunRequest
+- 返回：WorkflowResponse（`taskId` + `status`，立即返回，不阻塞）
+- 错误：缺 `workflow` → 400
+
+**WorkflowRunRequest**
+
+| 字段         | 类型                             | 必填 | 说明                                                          |
+| ------------ | -------------------------------- | ---- | ------------------------------------------------------------- |
+| `workflow`   | string                           | 是   | 工作流模板名（对应 `workflows/` 下文件名，不含 `.json`）      |
+| `nodeInputs` | map<string, map<string, object>> | 否   | 节点输入注入：nodeId → (inputKey → value)                     |
+| `images`     | map<string, string>              | 否   | 图片注入：nodeId → 图片绝对路径（LoadImage 节点）             |
+| `outputNode` | string                           | 否   | 输出节点 ID（SaveImage/SaveVideo/SaveAudio）                  |
+| `mediaType`  | string                           | 否   | 产物媒体类型（image/png、video/mp4、audio/wav）               |
+| `subDir`     | string                           | 否   | 产物落盘子目录（images/audio/video/voice/final，默认 images） |
+| `fileName`   | string                           | 否   | 产物文件名（含扩展名）                                        |
+| `purpose`    | int                              | 否   | 资源用途（ResourcePurposeEnum，见 7.3）                       |
+| `timeoutSec` | int                              | 否   | 轮询超时（秒，默认 1800）                                     |
+
+**WorkflowResponse**
+
+| 字段           | 类型   | 说明                                     |
+| -------------- | ------ | ---------------------------------------- |
+| `success`      | bool   | 是否成功                                 |
+| `taskId`       | string | 任务 ID（用于 6.7 轮询）                 |
+| `status`       | string | 状态（pending/running/succeeded/failed） |
+| `message`      | string | 提示信息                                 |
+| `mediaType`    | string | 产物媒体类型（完成后填充）               |
+| `resourceId`   | long   | 产物资源 id（完成后填充）                |
+| `relativePath` | string | 产物相对资源目录路径（完成后填充）       |
+
+### 6.7 查询任务状态/产物（轮询）
+
+- **`GET /api/workflow/{taskId}`**
+- 路径参数：`taskId`（6.6 返回的任务 ID）
+- 返回：WorkflowResponse（`status` 为 `succeeded` 时含 `mediaType` / `resourceId` / `relativePath`）
+- 错误：任务不存在 → 404
+
+**示例（参数化发起 + 轮询）**
+
+```
+POST /api/workflow
+{
+  "workflow": "text2img",
+  "nodeInputs": { "6": { "text": "a young female observer, anime style" } },
+  "outputNode": "9",
+  "mediaType": "image/png",
+  "subDir": "images",
+  "fileName": "xingye.png",
+  "purpose": 0
+}
+→ 200
+{ "success": true, "taskId": "a1b2c3", "status": "pending", "message": "已提交" }
+
+GET /api/workflow/a1b2c3
+→ 200
+{ "success": true, "taskId": "a1b2c3", "status": "succeeded",
+  "mediaType": "image/png", "resourceId": 5001, "relativePath": "images/xingye.png" }
+```
 
 ---
 
-## 七、Agent 接入约定
+## 七、资源（/api/resources）
+
+> 全部依赖当前项目上下文（先 load 项目）。资源文件统一存放于 `<ResourcesRoot>\<项目名>\{images,audio,video,voice,final}`。
+
+### 7.1 列出当前项目全部资源
+
+- **`GET /api/resources`**
+- 参数：无
+- 返回：`Resource[]`
+
+**Resource 对象**：`id` / `projectId` / `relativePath`（相对资源目录，如 `images/x.png`）/ `mediaType` / `purpose` / `duration` / `createdTime` / `updatedTime`
+
+### 7.2 下载资源文件
+
+- **`GET /api/resources/{id}/file`**
+- 路径参数：`id`（long）
+- 返回：二进制文件流（`Content-Type` 按扩展名推断：png/jpg/mp4/wav/mp3 等）
+- 错误：资源不存在 → 404 `{ "message": "资源 {id} 不存在" }`
+
+### 7.3 上传资源文件（multipart）
+
+- **`POST /api/resources/upload`**
+- 请求体：`multipart/form-data`，字段如下（**注意：不是 JSON**）
+  | 字段 | 必填 | 说明 |
+  | ----------- | ---- | ------------------------------------------------- |
+  | `subDir` | 是 | 子目录（images/audio/video/voice/final） |
+  | `fileName` | 是 | 文件名（含扩展名） |
+  | `mediaType` | 是 | MIME 类型（image/png、audio/mpeg 等） |
+  | `purpose` | 是 | ResourcePurposeEnum 枚举值（见下表） |
+  | `file` | 是 | 文件二进制 |
+- 返回：Resource 对象
+- 限制：单文件最大 500MB
+
+**ResourcePurposeEnum**
+
+| 值  | 名称     |
+| --- | -------- |
+| 0   | 资产主图 |
+| 1   | 资产音频 |
+| 2   | 声线种子 |
+| 3   | 镜头视频 |
+| 4   | 放大视频 |
+| 5   | 配音片段 |
+| 6   | 成片     |
+| 7   | 封面     |
+| 99  | 其它     |
+
+**示例（PowerShell 5.1，multipart）**
+
+```powershell
+$bytes = [System.IO.File]::ReadAllBytes("D:\tmp\xingye.png")
+$content = [System.Net.Http.MultipartFormDataContent]::new()
+$content.Add([System.Net.Http.StringContent]::new("images"), "subDir")
+$content.Add([System.Net.Http.StringContent]::new("xingye.png"), "fileName")
+$content.Add([System.Net.Http.StringContent]::new("image/png"), "mediaType")
+$content.Add([System.Net.Http.StringContent]::new("0"), "purpose")
+$fileContent = [System.Net.Http.ByteArrayContent]::new($bytes)
+$fileContent.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::new("image/png")
+$content.Add($fileContent, "file", "xingye.png")
+Invoke-RestMethod -Uri "http://127.0.0.1:6066/api/resources/upload" -Method Post -Body $content
+```
+
+### 7.4 删除资源
+
+- **`DELETE /api/resources/{id}`**
+- 路径参数：`id`（long）
+- 返回：`{ "message": "已删除" }`
+
+---
+
+## 八、评审（/api/reviews）
+
+> 评审保留给 agent：agent 经 API 拉取环节内容做评审，结论经 API 写回。全部依赖当前项目上下文（先 load 项目）。
+
+### 8.1 获取项目全部评审记录
+
+- **`GET /api/reviews`**
+- 参数：无
+- 返回：`Review[]`
+
+### 8.2 获取某环节评审记录
+
+- **`GET /api/reviews/{stage}`**
+- 路径参数：`stage` 环节（StageEnum，见下表）
+- 返回：Review 对象；不存在 → 404
+
+### 8.3 写入/更新评审结论
+
+- **`PUT /api/reviews/{stage}`**
+- 路径参数：`stage`（StageEnum）
+- 请求体：ReviewUpsertRequest
+- 返回：Review 对象
+
+**ReviewUpsertRequest**
+
+| 字段       | 类型   | 必填 | 说明                           |
+| ---------- | ------ | ---- | ------------------------------ |
+| `decision` | int    | 是   | 评审结论（ReviewDecisionEnum） |
+| `content`  | string | 否   | 评审正文                       |
+| `issues`   | string | 否   | 问题清单（编号列表）           |
+
+**Review 对象**：`id` / `projectId` / `stage` / `decision` / `content` / `issues` / `revisionCount` / `createdTime` / `updatedTime`
+
+**StageEnum**
+
+| 值  | 名称 |
+| --- | ---- |
+| 0   | 立项 |
+| 1   | 剧本 |
+| 2   | 分镜 |
+| 3   | 资产 |
+| 4   | 声线 |
+| 5   | 音乐 |
+| 6   | 音效 |
+| 7   | 视频 |
+| 8   | 配音 |
+| 9   | 合成 |
+
+**ReviewDecisionEnum**
+
+| 值  | 名称   |
+| --- | ------ |
+| 0   | 待评审 |
+| 1   | 通过   |
+| 2   | 打回   |
+| 3   | 升级   |
+
+### 8.4 记录一次打回（计数+1，超 5 次自动升级）
+
+- **`POST /api/reviews/{stage}/revision`**
+- 路径参数：`stage`（StageEnum）
+- 请求体：ReviewUpsertRequest（可选，`issues` 记录本次打回原因）
+- 返回：Review 对象（`revisionCount` 已 +1；超过 5 次 `decision` 自动置为 3=升级）
+
+---
+
+## 九、设置（/api/settings）
+
+### 9.1 获取设置
+
+- **`GET /api/settings`**
+- 参数：无
+- 返回：MjStudioOptions 对象（见下）
+
+### 9.2 更新设置
+
+- **`PUT /api/settings`**
+- 请求体：MjStudioOptions
+- 返回：MjStudioOptions 对象
+- **说明**：端口（`apiPort`）变更需调用方重启 API 才生效（WPF 端会自动调 `ApiServerManager.Restart`）
+
+**MjStudioOptions**
+
+| 字段                | 类型   | 说明                                             |
+| ------------------- | ------ | ------------------------------------------------ |
+| `comfyUiBaseUrl`    | string | ComfyUI 服务地址（默认 `http://127.0.0.1:8188`） |
+| `comfyUiLaunchPath` | string | ComfyUI 程序启动地址（可执行文件路径）           |
+| `comfyUiOutputDir`  | string | ComfyUI output 目录（取回源件用）                |
+| `apiPort`           | int    | 内置 API 监听端口（默认 6066）                   |
+| `apiHost`           | string | 内置 API 监听地址（默认 `127.0.0.1`）            |
+| `dbRoot`            | string | 数据库目录（每个项目一个 `<项目名>.db`）         |
+| `resourcesRoot`     | string | 资源目录（所有项目媒体文件统一存放处）           |
+| `workflowDir`       | string | 工作流模板目录（默认 `workflows`）               |
+
+---
+
+## 十、健康检查
+
+- **`GET /health`**
+- 参数：无
+- 返回：`{ "status": "healthy", "service": "MjStudio", "time": "<UTC ISO8601>" }`
+- **说明**：可用于就绪探测（比 `GET /api/projects` 更轻量）
+
+---
+
+## 十一、Agent 接入约定
 
 1. **写入顺序固定**：项目 → load → 剧本 → 资产 → 分镜（分镜依赖集 id，集依赖项目上下文）
 2. **幂等由调用方保证**：服务端 POST 在 `id` 为空时一律新建、不去重。写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/集按集号/镜头按集内镜号），已存在则跳过或带 `id` 更新（`agent_pipeline.py` 即此策略）
 3. **中文处理**：请求体 JSON 用 UTF-8（`ensure_ascii=False`）；URL 路径中的中文项目名需 `urllib.parse.quote`
-4. **错误处理**：非 200 响应体含 `message` 字段；404 通常是项目未 load 或 id 不存在
-5. **后续环节**（图片/视频/配音/合成）走工作流 API（`/api/workflow/*`）
+4. **错误处理**：非 200 响应体含 `message` 字段；404 通常是项目未 load 或 id 不存在；409 是资源冲突（如项目名已存在）
+5. **后续环节**（图片/视频/配音/合成）走工作流 API（`/api/workflow/*`）：参数化发起用 `POST /api/workflow` + `GET /api/workflow/{taskId}` 轮询；直接提交完整 JSON 用 `POST /api/workflow/raw`
+6. **资源文件**：上传用 `POST /api/resources/upload`（multipart），下载用 `GET /api/resources/{id}/file`；资产关联资源用 `PUT /api/assets/{id}/resource`
+7. **评审**：agent 经 `PUT /api/reviews/{stage}` 写结论、`POST /api/reviews/{stage}/revision` 记打回（>5 次自动升级）
 
-## 八、最小调用示例（Python 标准库，实测通过）
+## 十二、最小调用示例（Python 标准库，实测通过）
 
 ```python
 import json, urllib.parse, urllib.request
