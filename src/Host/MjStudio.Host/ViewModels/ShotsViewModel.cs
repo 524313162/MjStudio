@@ -38,11 +38,6 @@ namespace MjStudio.Host.ViewModels
             "硬切", "叠化", "淡入", "淡出", "闪白", "摇移承接"
         };
 
-        /// <summary>BGM 资产（AssetType.Bgm）</summary>
-        public ObservableCollection<Asset> BgmAssets { get; } = new();
-        /// <summary>音效资产（AssetType.SoundEffect）</summary>
-        public ObservableCollection<Asset> SfxAssets { get; } = new();
-
         /// <summary>本镜已绑定资产</summary>
         public ObservableCollection<ShotAssetRefItem> ShotAssets { get; } = new();
 
@@ -78,14 +73,6 @@ namespace MjStudio.Host.ViewModels
         public string FormShotSize { get => _formShotSize; set => SetProperty(ref _formShotSize, value); }
         private string _formTimeline = "";
         public string FormTimeline { get => _formTimeline; set => SetProperty(ref _formTimeline, value); }
-        private string _formBgm = "";
-        public string FormBgm { get => _formBgm; set => SetProperty(ref _formBgm, value); }
-        private string _formBgmRange = "";
-        public string FormBgmRange { get => _formBgmRange; set => SetProperty(ref _formBgmRange, value); }
-        private string _formAmbientSfx = "";
-        public string FormAmbientSfx { get => _formAmbientSfx; set => SetProperty(ref _formAmbientSfx, value); }
-        private string _formSfxRange = "";
-        public string FormSfxRange { get => _formSfxRange; set => SetProperty(ref _formSfxRange, value); }
         private string _formTransition = "";
         public string FormTransition { get => _formTransition; set => SetProperty(ref _formTransition, value); }
         private string _formPrompt = "";
@@ -141,26 +128,13 @@ namespace MjStudio.Host.ViewModels
                 var pid = _resources.GetProjectIdAsync().GetAwaiter().GetResult();
                 var list = _shots.GetEpisodesAsync(pid).GetAwaiter().GetResult();
                 foreach (var e in list.OrderBy(x => x.EpisodeNo)) Episodes.Add(e);
-            }
-            catch { /* 忽略 */ }
-
-            LoadAudioAssets();
-        }
-
-        /// <summary>加载 BGM 与音效资产（仅当前项目绑定的资产，供下拉选择）</summary>
-        private void LoadAudioAssets()
-        {
-            BgmAssets.Clear();
-            SfxAssets.Clear();
-            if (!_current.IsLoaded) return;
-            try
-            {
-                var pid = _resources.GetProjectIdAsync().GetAwaiter().GetResult();
-                var list = _assets.GetByProjectAsync(pid).GetAwaiter().GetResult();
-                foreach (var a in list.Where(x => x.AssetType == AssetTypeEnum.Bgm && x.ParentAssetId is null))
-                    BgmAssets.Add(a);
-                foreach (var a in list.Where(x => x.AssetType == AssetTypeEnum.SoundEffect && x.ParentAssetId is null))
-                    SfxAssets.Add(a);
+                // 进入分镜页默认选中第一集（触发 LoadShots），再选中第一个镜头
+                if (Episodes.Count > 0)
+                {
+                    SelectedEpisode = Episodes[0];
+                    if (Shots.Count > 0)
+                        SelectedShot = Shots[0];
+                }
             }
             catch { /* 忽略 */ }
         }
@@ -205,10 +179,6 @@ namespace MjStudio.Host.ViewModels
             FormCamera = SelectedShot.Camera ?? "";
             FormShotSize = SelectedShot.ShotSize ?? "";
             FormTimeline = SelectedShot.Timeline ?? "";
-            FormBgm = SelectedShot.Bgm ?? "";
-            FormBgmRange = SelectedShot.BgmRange ?? "";
-            FormAmbientSfx = SelectedShot.AmbientSfx ?? "";
-            FormSfxRange = SelectedShot.SfxRange ?? "";
             FormTransition = SelectedShot.Transition ?? "";
             FormPrompt = SelectedShot.VideoPromptCn ?? "";
             FormNegativePrompt = SelectedShot.VideoNegativePromptEn ?? "";
@@ -224,9 +194,41 @@ namespace MjStudio.Host.ViewModels
                 var shot = _shots.GetShotAsync(SelectedShot.Id).GetAwaiter().GetResult();
                 if (shot?.AssetRefs is null) return;
                 foreach (var r in shot.AssetRefs.OrderBy(x => x.MediaIndex))
-                    ShotAssets.Add(ShotAssetRefItem.From(r));
+                {
+                    var item = ShotAssetRefItem.From(r);
+                    item.PropertyChanged += OnAudioRangeChanged;
+                    ShotAssets.Add(item);
+                }
             }
             catch { /* 忽略 */ }
+        }
+
+        /// <summary>音频（BGM/音效）播放时间段编辑后持久化</summary>
+        private void OnAudioRangeChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(ShotAssetRefItem.StartText) or nameof(ShotAssetRefItem.EndText))
+                SaveAudioRanges();
+        }
+
+        /// <summary>把当前本镜资产的播放时间段写回（全量覆盖）</summary>
+        private void SaveAudioRanges()
+        {
+            if (SelectedShot is null) return;
+            try
+            {
+                var refs = ShotAssets
+                    .Select(i => (i.AssetId, i.MediaIndex, i.RefType, ParseRange(i.StartText), ParseRange(i.EndText)))
+                    .ToList();
+                _shots.SetAssetRefsAsync(SelectedShot.Id, refs).GetAwaiter().GetResult();
+            }
+            catch { /* 忽略 */ }
+        }
+
+        private static float? ParseRange(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return null;
+            return float.TryParse(text.Trim(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
         }
 
         /// <summary>绑定资产：打开对话框选择要绑定的资产</summary>
@@ -260,9 +262,11 @@ namespace MjStudio.Host.ViewModels
                 dialog.Owner = System.Windows.Application.Current.MainWindow;
                 if (dialog.ShowDialog() == true && dialog.SelectedAssets is { Count: > 0 } selected)
                 {
-                    // 合并已绑定 + 新选，重新排定 MediaIndex
+                    // 合并已绑定 + 新选，重新排定 MediaIndex（保留已有 BGM/音效的播放时间段）
                     var existingRefs = SelectedShot.AssetRefs?.ToList() ?? new List<ShotAssetRef>();
-                    var newRefs = existingRefs.Select(r => (r.AssetId, r.MediaIndex, r.RefType ?? "")).ToList();
+                    var newRefs = existingRefs
+                        .Select(r => (r.AssetId, r.MediaIndex, r.RefType ?? "", r.StartRange, r.EndRange))
+                        .ToList();
                     int nextIndex = newRefs.Count > 0 ? newRefs.Max(r => r.MediaIndex) + 1 : 1;
                     foreach (var a in selected)
                     {
@@ -274,7 +278,7 @@ namespace MjStudio.Host.ViewModels
                             AssetTypeEnum.SoundEffect => "sfx",
                             _ => "other"
                         };
-                        newRefs.Add((a.Id, nextIndex++, refType));
+                        newRefs.Add((a.Id, nextIndex++, refType, (float?)null, (float?)null));
                     }
                     _shots.SetAssetRefsAsync(SelectedShot.Id, newRefs).GetAwaiter().GetResult();
                     LoadShotAssets();
@@ -295,7 +299,8 @@ namespace MjStudio.Host.ViewModels
                 var shot = _shots.GetShotAsync(SelectedShot.Id).GetAwaiter().GetResult();
                 if (shot?.AssetRefs is null) return;
                 var remaining = shot.AssetRefs.Where(r => r.AssetId != item.AssetId)
-                    .Select(r => (r.AssetId, r.MediaIndex, r.RefType ?? "")).ToList();
+                    .Select(r => (r.AssetId, r.MediaIndex, r.RefType ?? "", r.StartRange, r.EndRange))
+                    .ToList();
                 _shots.SetAssetRefsAsync(SelectedShot.Id, remaining).GetAwaiter().GetResult();
                 LoadShotAssets();
             }
@@ -310,8 +315,7 @@ namespace MjStudio.Host.ViewModels
             IsEditing = false;
             FormTitle = ""; FormDescription = "";
             FormCamera = ""; FormShotSize = "";
-            FormTimeline = ""; FormBgm = ""; FormBgmRange = "";
-            FormAmbientSfx = ""; FormSfxRange = ""; FormTransition = "";
+            FormTimeline = ""; FormTransition = "";
             FormPrompt = ""; FormNegativePrompt = "";
         }
 
@@ -331,10 +335,6 @@ namespace MjStudio.Host.ViewModels
                 Camera = FormCamera,
                 ShotSize = FormShotSize,
                 Timeline = FormTimeline,
-                Bgm = FormBgm,
-                BgmRange = FormBgmRange,
-                AmbientSfx = FormAmbientSfx,
-                SfxRange = FormSfxRange,
                 Transition = FormTransition,
                 VideoPromptCn = FormPrompt,
                 VideoNegativePromptEn = FormNegativePrompt

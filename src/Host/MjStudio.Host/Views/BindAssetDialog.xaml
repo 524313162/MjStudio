@@ -23,20 +23,29 @@
                    FontSize="12"
                    Margin="0,0,0,10"/>
 
-        <!-- 搜索框 -->
+        <!-- 类型筛选 + 搜索框 -->
         <Grid Grid.Row="1"
               Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            <hc:ComboBox Grid.Column="0"
+                         Width="92"
+                         ItemsSource="{Binding TypeOptions}"
+                         SelectedItem="{Binding SelectedType, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="12"
+                         VerticalAlignment="Center"
+                         hc:InfoElement.Placeholder="类型"/>
             <hc:TextBox x:Name="SearchBox"
-                        Grid.Column="0"
+                        Grid.Column="1"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                         FontSize="12"
                         Padding="8,6"
+                        Margin="8,0,0,0"
                         hc:InfoElement.Placeholder="输入资产名称搜索"/>
-            <TextBlock Grid.Column="1"
+            <TextBlock Grid.Column="2"
                        Text="{Binding FilteredCount, StringFormat='{}{0} 个'}"
                        Foreground="{StaticResource TextMutedBrush}"
                        FontSize="11"

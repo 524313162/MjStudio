@@ -95,6 +95,19 @@ namespace MjStudio.Host.Views
             }
         }
 
+        private string _selectedType = "全部";
+        public string SelectedType
+        {
+            get => _selectedType;
+            set
+            {
+                if (SetProperty(ref _selectedType, value))
+                    ApplyFilter();
+            }
+        }
+
+        public List<string> TypeOptions { get; } = new() { "全部", "角色", "场景", "BGM", "音效" };
+
         private int _filteredCount;
         public int FilteredCount
         {
@@ -124,10 +137,23 @@ namespace MjStudio.Host.Views
 
         private bool FilterPredicate(object obj)
         {
-            if (string.IsNullOrWhiteSpace(SearchText)) return true;
             if (obj is not BindAssetItem item) return false;
+            if (!MatchType(item)) return false;
+            if (string.IsNullOrWhiteSpace(SearchText)) return true;
             return item.Name.Contains(SearchText, System.StringComparison.OrdinalIgnoreCase)
                 || item.Description.Contains(SearchText, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool MatchType(BindAssetItem item)
+        {
+            return SelectedType switch
+            {
+                "角色" => item.Asset.AssetType == AssetTypeEnum.Character,
+                "场景" => item.Asset.AssetType == AssetTypeEnum.Scene,
+                "BGM" => item.Asset.AssetType == AssetTypeEnum.Bgm,
+                "音效" => item.Asset.AssetType == AssetTypeEnum.SoundEffect,
+                _ => true
+            };
         }
 
         private void ApplyFilter()

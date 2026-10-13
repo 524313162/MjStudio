@@ -119,7 +119,7 @@ namespace MjStudio.WebApi.Controllers
         public async Task<IActionResult> SetAssetRefs(long id, [FromBody] ShotAssetRefsRequest req)
         {
             var refs = (req.Refs ?? new List<ShotAssetRefItem>())
-                .Select(r => (r.AssetId, r.MediaIndex, r.RefType ?? ""))
+                .Select(r => (r.AssetId, r.MediaIndex, r.RefType ?? "", r.StartRange, r.EndRange))
                 .ToList();
             await _shots.SetAssetRefsAsync(id, refs);
             return Ok(await _shots.GetShotAsync(id));

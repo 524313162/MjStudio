@@ -62,12 +62,18 @@ namespace MjStudio.WebApi.Dtos
         public string? NegativePromptEn { get; set; }
     }
 
-    /// <summary>镜头资产引用项（参考图排定：1=场景组合图，2~N=角色/场景/道具）</summary>
+    /// <summary>镜头资产引用项（参考图排定：1=场景组合图，2~N=角色/场景/道具；bgm/sfx 含播放时间段）</summary>
     public class ShotAssetRefItem
     {
         public long AssetId { get; set; }
         public int MediaIndex { get; set; }
         public string RefType { get; set; } = "";
+
+        /// <summary>开始播放时间（秒，bgm/sfx 用）</summary>
+        public float? StartRange { get; set; }
+
+        /// <summary>结束播放时间（秒，bgm/sfx 用）</summary>
+        public float? EndRange { get; set; }
     }
 
     /// <summary>设置镜头资产引用请求（全量覆盖）</summary>

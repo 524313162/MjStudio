@@ -153,7 +153,7 @@ namespace MjStudio.Application.Services
             return resource;
         }
 
-        public async Task SetAssetRefsAsync(long shotId, List<(long AssetId, int MediaIndex, string RefType)> refs)
+        public async Task SetAssetRefsAsync(long shotId, List<(long AssetId, int MediaIndex, string RefType, float? StartRange, float? EndRange)> refs)
         {
             await using var db = _factory.Create(_current.Require());
             var shot = await db.Shots.Include(s => s.AssetRefs).FirstAsync(s => s.Id == shotId);
@@ -163,18 +163,21 @@ namespace MjStudio.Application.Services
             db.ShotAssetRefs.RemoveRange(shot.AssetRefs);
             shot.AssetRefs.Clear();
 
-            foreach (var (assetId, mediaIndex, refType) in refs)
+            foreach (var (assetId, mediaIndex, refType, startRange, endRange) in refs)
             {
                 shot.AssetRefs.Add(new ShotAssetRef
                 {
                     AssetId = assetId,
                     MediaIndex = mediaIndex,
                     RefType = refType,
+                    StartRange = startRange,
+                    EndRange = endRange,
                     CreatedTime = now,
                     UpdatedTime = now
                 });
             }
-            shot.RefImageCount = refs.Count;
+            // 参考图数量只统计图片类引用（角色/场景/道具），不含 bgm/sfx
+            shot.RefImageCount = refs.Count(r => r.RefType is "character" or "scene" or "prop");
             shot.UpdatedTime = now;
             await db.SaveChangesAsync();
         }

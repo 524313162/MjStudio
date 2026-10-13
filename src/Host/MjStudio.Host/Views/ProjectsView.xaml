@@ -71,7 +71,7 @@
                                         <ItemsControl ItemsSource="{Binding FilteredCards}">
                                                 <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>
-                                                                <WrapPanel/>
+                                                                <UniformGrid Columns="4"/>
                                                         </ItemsPanelTemplate>
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
@@ -79,9 +79,8 @@
                                                                 <Border Background="White"
                                                                         BorderBrush="{StaticResource BorderBrush}"
                                                                         BorderThickness="1"
-                                                                        CornerRadius="12"
-                                                                        Width="300"
-                                                                        Margin="0,0,16,16"
+                                                                        CornerRadius="10"
+                                                                        Margin="0,0,12,12"
                                                                         Cursor="Hand"
                                                                         MouseLeftButtonDown="OnCardClick">
                                                                         <Border.Effect>
@@ -111,17 +110,16 @@
                                                                                         Background="{StaticResource PrimaryBrush}"/>
 
                                                                                 <!-- 内容区 -->
-                                                                                <Border Padding="18,14,18,16">
+                                                                                <Border Padding="14,12,14,14">
                                                                                         <StackPanel>
                                                                                                 <!-- 名称 + 当前标记 -->
                                                                                                 <StackPanel Orientation="Horizontal"
-                                                                                                            Margin="0,0,0,6">
+                                                                                                            Margin="0,0,0,4">
                                                                                                         <TextBlock Text="{Binding Name}"
-                                                                                                                   FontSize="17"
+                                                                                                                   FontSize="15"
                                                                                                                    FontWeight="Bold"
                                                                                                                    Foreground="{StaticResource TextPrimaryBrush}"
-                                                                                                                   TextTrimming="CharacterEllipsis"
-                                                                                                                   MaxWidth="200"/>
+                                                                                                                   TextTrimming="CharacterEllipsis"/>
                                                                                                         <Border Background="{StaticResource PrimaryBrush}"
                                                                                                                 CornerRadius="4"
                                                                                                                 Padding="6,2"
@@ -142,16 +140,16 @@
 
                                                                                                 <!-- 故事名称 -->
                                                                                                 <TextBlock Text="{Binding StoryName, TargetNullValue='未命名', FallbackValue='未命名'}"
-                                                                                                           FontSize="13"
+                                                                                                           FontSize="12"
                                                                                                            Foreground="{StaticResource TextSecondaryBrush}"
                                                                                                            TextTrimming="CharacterEllipsis"
-                                                                                                           Margin="0,0,0,12"/>
+                                                                                                           Margin="0,0,0,8"/>
 
                                                                                                 <!-- 规格信息：题材 / 平台 分列标签，避免整块显示 -->
-                                                                                                <StackPanel Margin="0,0,0,12">
+                                                                                                <StackPanel Margin="0,0,0,8">
                                                                                                         <!-- 题材 -->
                                                                                                         <StackPanel Orientation="Horizontal"
-                                                                                                                        Margin="0,0,0,6">
+                                                                                                                    Margin="0,0,0,6">
                                                                                                                 <TextBlock Text="题材"
                                                                                                                            Width="40"
                                                                                                                            VerticalAlignment="Center"
@@ -211,11 +209,11 @@
                                                                                                 <!-- 分隔线 -->
                                                                                                 <Border Height="1"
                                                                                                         Background="{StaticResource BorderBrush}"
-                                                                                                        Margin="0,0,0,12"/>
+                                                                                                        Margin="0,0,0,8"/>
 
                                                                                                 <!-- 规格行：画幅 · 集数 · 环节 -->
                                                                                                 <StackPanel Orientation="Horizontal"
-                                                                                                            Margin="0,0,0,14">
+                                                                                                            Margin="0,0,0,10">
                                                                                                         <Border Background="{StaticResource PrimaryLightBrush}"
                                                                                                                 CornerRadius="4"
                                                                                                                 Padding="8,3"

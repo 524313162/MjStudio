@@ -25,7 +25,7 @@ namespace MjStudio.Application.Shared.Services
         /// <summary>为镜头挂载视频资源</summary>
         Task<Resource> AttachVideoAsync(long shotId, string relativePath, ResourcePurposeEnum purpose);
 
-        /// <summary>设置镜头资产引用（参考图排定）</summary>
-        Task SetAssetRefsAsync(long shotId, List<(long AssetId, int MediaIndex, string RefType)> refs);
+        /// <summary>设置镜头资产引用（参考图排定；bgm/sfx 含播放时间段）</summary>
+        Task SetAssetRefsAsync(long shotId, List<(long AssetId, int MediaIndex, string RefType, float? StartRange, float? EndRange)> refs);
     }
 }

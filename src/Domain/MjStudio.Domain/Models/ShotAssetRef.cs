@@ -21,8 +21,14 @@ namespace MjStudio.Domain.Models
         /// <summary>参考图序号（1=场景组合图，2~N=角色/场景/道具）</summary>
         public int MediaIndex { get; set; }
 
-        /// <summary>引用类型（scene/character/prop）</summary>
+        /// <summary>引用类型（scene/character/prop/bgm/sfx）</summary>
         [StringLength(32)]
         public string? RefType { get; set; }
+
+        /// <summary>开始播放时间（秒，bgm/sfx 用，如 0）</summary>
+        public float? StartRange { get; set; }
+
+        /// <summary>结束播放时间（秒，bgm/sfx 用，如 5）</summary>
+        public float? EndRange { get; set; }
     }
 }

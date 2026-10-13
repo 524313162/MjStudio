@@ -175,6 +175,21 @@ namespace MjStudio.Infrastructure
                     cmd.CommandText = "ALTER TABLE Shots ADD COLUMN SfxRange TEXT NULL";
                     cmd.ExecuteNonQuery();
                 }
+
+                // 镜头资产引用：BGM/音效播放时间段（开始/结束秒）
+                var refCols = GetTableColumns(conn, "ShotAssetRefs");
+                if (!refCols.Contains("StartRange"))
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = "ALTER TABLE ShotAssetRefs ADD COLUMN StartRange REAL NULL";
+                    cmd.ExecuteNonQuery();
+                }
+                if (!refCols.Contains("EndRange"))
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = "ALTER TABLE ShotAssetRefs ADD COLUMN EndRange REAL NULL";
+                    cmd.ExecuteNonQuery();
+                }
             }
             catch { /* 表不存在或已升级则忽略 */ }
         }
