@@ -68,6 +68,10 @@ namespace MjStudio.WebApi
             // ComfyUI 客户端 + 工作流引擎（单例）
             services.AddSingleton<ComfyUiClient>();
             services.AddSingleton<WorkflowEngine>();
+
+            // FFmpeg + 生成引擎（单例）
+            services.AddSingleton<FfmpegService>();
+            services.AddSingleton<GenerationEngine>();
         }
     }
 }

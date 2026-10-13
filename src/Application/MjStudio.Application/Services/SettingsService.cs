@@ -34,6 +34,7 @@ namespace MjStudio.Application.Services
             options.DbRoot = loaded.DbRoot;
             options.ResourcesRoot = loaded.ResourcesRoot;
             options.WorkflowDir = loaded.WorkflowDir;
+            options.FfmpegPath = loaded.FfmpegPath;
         }
 
         public MjStudioOptions Get() => _options;

@@ -186,4 +186,97 @@ namespace MjStudio.WebApi.Dtos
         public string? Message { get; set; }
         public string? Result { get; set; }
     }
+
+    // ==================== 生成接口（9 个业务接口，封装 ComfyUI 工作流 / ffmpeg） ====================
+
+    /// <summary>图片生成请求（角色/场景/道具通用，ZImage 文生图）</summary>
+    public class ImageGenRequest
+    {
+        /// <summary>正向提示词</summary>
+        public string Prompt { get; set; } = "";
+        /// <summary>反向提示词</summary>
+        public string? NegativePrompt { get; set; }
+        /// <summary>宽度（像素）</summary>
+        public int Width { get; set; } = 1024;
+        /// <summary>高度（像素）</summary>
+        public int Height { get; set; } = 1024;
+        /// <summary>随机种子（不填则用模板默认）</summary>
+        public long? Seed { get; set; }
+        /// <summary>产物文件名（含扩展名，不填则自动生成）</summary>
+        public string? FileName { get; set; }
+    }
+
+    /// <summary>音频生成请求（BGM/音效通用，STABLE-BGM）</summary>
+    public class AudioGenRequest
+    {
+        /// <summary>音乐/音效描述（用途情绪 + 风格乐器 + 节奏）</summary>
+        public string Prompt { get; set; } = "";
+        /// <summary>时长（秒）</summary>
+        public int Duration { get; set; } = 150;
+        /// <summary>产物文件名（含扩展名，不填则自动生成）</summary>
+        public string? FileName { get; set; }
+    }
+
+    /// <summary>图片编辑请求（FLUX2，可编辑各种图片）</summary>
+    public class ImageEditRequest
+    {
+        /// <summary>源图片（相对资源目录路径，如 images/x.png）</summary>
+        public string SourceImage { get; set; } = "";
+        /// <summary>编辑指令（正向提示词）</summary>
+        public string Prompt { get; set; } = "";
+        /// <summary>反向提示词</summary>
+        public string? NegativePrompt { get; set; }
+        /// <summary>产物文件名（含扩展名，不填则自动生成）</summary>
+        public string? FileName { get; set; }
+    }
+
+    /// <summary>视频生成请求（MinimaxH3 多图参考，1~20 张参考图）</summary>
+    public class VideoGenRequest
+    {
+        /// <summary>视频提示词（画面内容 + 动作 + 台词时间轴 + 环境音效）</summary>
+        public string Prompt { get; set; } = "";
+        /// <summary>参考图列表（相对资源目录路径，1~20 张，顺序即 media_1~N）</summary>
+        public List<string> Images { get; set; } = new();
+        /// <summary>视频时长（秒）</summary>
+        public int Seconds { get; set; } = 10;
+        /// <summary>产物文件名（含扩展名，不填则自动生成）</summary>
+        public string? FileName { get; set; }
+    }
+
+    /// <summary>视频合成请求（ffmpeg concat 按顺序拼接镜头视频）</summary>
+    public class VideoComposeRequest
+    {
+        /// <summary>视频列表（相对资源目录路径，按顺序拼接）</summary>
+        public List<string> Videos { get; set; } = new();
+        /// <summary>产物文件名（含扩展名，不填则自动生成）</summary>
+        public string? FileName { get; set; }
+    }
+
+    /// <summary>视频导出请求（声音转换 + 拆分 + 合成）</summary>
+    public class VideoExportRequest
+    {
+        /// <summary>源视频（相对资源目录路径）</summary>
+        public string SourceVideo { get; set; } = "";
+        /// <summary>声线种子（相对资源目录路径，目标音色，5 秒即可）</summary>
+        public string TargetVoice { get; set; } = "";
+        /// <summary>产物文件名（含扩展名，不填则自动生成）</summary>
+        public string? FileName { get; set; }
+    }
+
+    /// <summary>生成任务响应（提交/查询通用）</summary>
+    public class GenerationResponse
+    {
+        public bool Success { get; set; }
+        /// <summary>任务 ID（提交时返回，查询时回传）</summary>
+        public string? TaskId { get; set; }
+        /// <summary>状态：queued/running/completed/failed。running 表示仍在进行，调用方应继续查询</summary>
+        public string? Status { get; set; }
+        public string? Message { get; set; }
+        /// <summary>产物媒体类型（image/png、video/mp4、audio/mpeg 等）</summary>
+        public string? MediaType { get; set; }
+        /// <summary>产物资源 ID（完成后返回）</summary>
+        public long? ResourceId { get; set; }
+        /// <summary>产物相对资源目录路径（完成后返回）</summary>
+        public string? RelativePath { get; set; }
+    }
 }

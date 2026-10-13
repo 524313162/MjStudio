@@ -31,5 +31,8 @@ namespace MjStudio.Domain.Shared
 
         /// <summary>工作流模板目录（程序目录下 workflows）</summary>
         public string WorkflowDir { get; set; } = "workflows";
+
+        /// <summary>FFmpeg 可执行文件路径（不填则默认从系统环境变量 PATH 中查找 ffmpeg）</summary>
+        public string FfmpegPath { get; set; } = "";
     }
 }

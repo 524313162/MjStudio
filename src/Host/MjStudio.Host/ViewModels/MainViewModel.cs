@@ -56,6 +56,9 @@ namespace MjStudio.Host.ViewModels
         private string _resourcesRoot = "";
         public string ResourcesRoot { get => _resourcesRoot; set => SetProperty(ref _resourcesRoot, value); }
 
+        private string _ffmpegPath = "";
+        public string FfmpegPath { get => _ffmpegPath; set => SetProperty(ref _ffmpegPath, value); }
+
         // ===== 侧边栏收起/展开（手动切换：展开 180 / 收起 56 图标栏） =====
         private bool _sidebarCollapsed;
         public bool SidebarCollapsed
@@ -162,6 +165,7 @@ namespace MjStudio.Host.ViewModels
             ComfyUiLaunchPath = opts.ComfyUiLaunchPath;
             DbRoot = opts.DbRoot;
             ResourcesRoot = opts.ResourcesRoot;
+            FfmpegPath = opts.FfmpegPath;
             UpdateApiStatus();
             _onProjectChanged();
 
@@ -235,6 +239,7 @@ namespace MjStudio.Host.ViewModels
             opts.ComfyUiLaunchPath = ComfyUiLaunchPath;
             opts.DbRoot = DbRoot;
             opts.ResourcesRoot = ResourcesRoot;
+            opts.FfmpegPath = FfmpegPath;
             _settings.Update(opts);
             MessageBox.Show("设置已保存。若修改了端口，请点击「重启 API」生效。", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Information);
         }

@@ -96,6 +96,12 @@
                                                                 Padding="14,7"
                                                                 FontSize="13"/>
                                                 </Grid>
+
+                                                <TextBlock Text="FFmpeg 路径（不填则默认从系统环境变量 PATH 中查找）"
+                                                           Style="{StaticResource FieldLabel}"
+                                                           Margin="0,14,0,0"/>
+                                                <hc:TextBox Text="{Binding FfmpegPath, UpdateSourceTrigger=PropertyChanged}"
+                                                            hc:InfoElement.Placeholder="ffmpeg.exe 完整路径，如 D:\ffmpeg\bin\ffmpeg.exe"/>
                                         </StackPanel>
                                 </Border>
 
