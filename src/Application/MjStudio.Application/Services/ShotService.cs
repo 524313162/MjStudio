@@ -53,13 +53,14 @@ namespace MjStudio.Application.Services
         {
             await using var db = _factory.Create(_current.Require());
             return await db.Shots.Include(s => s.AssetRefs).ThenInclude(r => r.Asset)
+                .Include(s => s.VideoResource)
                 .Where(s => s.EpisodeId == episodeId).OrderBy(s => s.ShotNo).ToListAsync();
         }
 
         public async Task<Shot?> GetShotAsync(long id)
         {
             await using var db = _factory.Create(_current.Require());
-            return await db.Shots.Include(s => s.AssetRefs).ThenInclude(r => r.Asset)
+            return await db.Shots.Include(s => s.AssetRefs).ThenInclude(r => r.Asset).ThenInclude(a => a!.Resource)
                 .Include(s => s.VideoResource)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }

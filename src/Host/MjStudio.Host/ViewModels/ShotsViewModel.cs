@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using MjStudio.Application.Shared.Services;
 using MjStudio.Domain.Models;
 using MjStudio.Domain.Shared;
 using MjStudio.Infrastructure;
+using MjStudio.WebApi.Dtos;
+using MjStudio.WebApi.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MjStudio.Host.ViewModels
@@ -20,6 +23,7 @@ namespace MjStudio.Host.ViewModels
         private readonly IProjectService _projects;
         private readonly ResourceStorageService _resourceStorage;
         private readonly CurrentProject _current;
+        private readonly GenerationEngine _engine;
 
         public ObservableCollection<Episode> Episodes { get; } = new();
         public ObservableCollection<Shot> Shots { get; } = new();
@@ -93,6 +97,35 @@ namespace MjStudio.Host.ViewModels
         public RelayCommand CancelEditCommand { get; }
         public RelayCommand BindAssetCommand { get; }
         public RelayCommand UnbindAssetCommand { get; }
+        public RelayCommand ExportOriginalCommand { get; }
+        public RelayCommand ExportVoiceSwapCommand { get; }
+        public RelayCommand GenerateVideoCommand { get; }
+
+        // ===== 导出状态 =====
+        private bool _isExporting;
+        public bool IsExporting { get => _isExporting; set => SetProperty(ref _isExporting, value); }
+        private string _exportStatusText = "";
+        public string ExportStatusText { get => _exportStatusText; set => SetProperty(ref _exportStatusText, value); }
+
+        // ===== 视频预览 =====
+        private string? _videoPath;
+        public string? VideoPath
+        {
+            get => _videoPath;
+            set
+            {
+                if (SetProperty(ref _videoPath, value))
+                {
+                    OnPropertyChanged(nameof(VideoUri));
+                    OnPropertyChanged(nameof(HasVideo));
+                }
+            }
+        }
+        public Uri? VideoUri => VideoPath is not null && File.Exists(VideoPath) ? new Uri(VideoPath) : null;
+        public bool HasVideo => VideoPath is not null && File.Exists(VideoPath);
+
+        private bool _isGeneratingVideo;
+        public bool IsGeneratingVideo { get => _isGeneratingVideo; set => SetProperty(ref _isGeneratingVideo, value); }
 
         public ShotsViewModel(IServiceProvider services)
         {
@@ -103,6 +136,7 @@ namespace MjStudio.Host.ViewModels
             _projects = services.GetRequiredService<IProjectService>();
             _resourceStorage = services.GetRequiredService<ResourceStorageService>();
             _current = services.GetRequiredService<CurrentProject>();
+            _engine = services.GetRequiredService<GenerationEngine>();
 
             RefreshCommand = new RelayCommand(Refresh);
             CreateShotCommand = new RelayCommand(StartCreateShot);
@@ -111,6 +145,9 @@ namespace MjStudio.Host.ViewModels
             CancelEditCommand = new RelayCommand(CancelEdit);
             BindAssetCommand = new RelayCommand(BindAsset);
             UnbindAssetCommand = new RelayCommand(UnbindAsset);
+            ExportOriginalCommand = new RelayCommand(ExportOriginal, () => CanExport);
+            ExportVoiceSwapCommand = new RelayCommand(ExportVoiceSwap, () => CanExport);
+            GenerateVideoCommand = new RelayCommand(GenerateVideo, () => CanGenerateVideo);
 
             Refresh();
         }
@@ -182,6 +219,22 @@ namespace MjStudio.Host.ViewModels
             FormTransition = SelectedShot.Transition ?? "";
             FormPrompt = SelectedShot.VideoPromptCn ?? "";
             FormNegativePrompt = SelectedShot.VideoNegativePromptEn ?? "";
+            LoadVideoPath();
+        }
+
+        /// <summary>加载当前镜头的视频路径</summary>
+        private void LoadVideoPath()
+        {
+            if (SelectedShot?.VideoResource is { RelativePath: not null } res)
+            {
+                try
+                {
+                    VideoPath = _resourceStorage.GetAbsolutePath(_current.Require(), res.RelativePath);
+                    return;
+                }
+                catch { /* 忽略 */ }
+            }
+            VideoPath = null;
         }
 
         /// <summary>加载本镜已绑定资产</summary>
@@ -317,6 +370,7 @@ namespace MjStudio.Host.ViewModels
             FormCamera = ""; FormShotSize = "";
             FormTimeline = ""; FormTransition = "";
             FormPrompt = ""; FormNegativePrompt = "";
+            VideoPath = null;
         }
 
         private void CancelEdit()
@@ -395,6 +449,273 @@ namespace MjStudio.Host.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show("删除失败：" + ex.Message, "MjStudio", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ==================== 导出（复用 GenerationEngine 的 videoCompose / videoExport 接口，与 API 同一套代码） ====================
+
+        private bool CanExport => _current.IsLoaded && SelectedEpisode is not null && Shots.Count > 0 && !IsExporting;
+
+        /// <summary>
+        /// 导出前校验：当前集所有镜头必须都有视频，缺一个都不能导出。
+        /// 有缺失时弹窗列出具体缺哪个镜头，并自动选中第一个缺失的镜头，返回 false。
+        /// </summary>
+        private bool ValidateAllShotsHaveVideo()
+        {
+            if (SelectedEpisode is null) return false;
+            // 直接用内存中的 Shots 集合（与列表框同一批实例，选中才能生效）
+            var shots = Shots.OrderBy(s => s.ShotNo).ToList();
+            var missing = shots.Where(s => s.VideoResourceId is null).ToList();
+            if (missing.Count == 0) return true;
+
+            var lines = string.Join("\n", missing.Select(s => $"  • 镜头#{s.ShotNo}「{s.Title}」"));
+            MessageBox.Show(
+                $"无法导出：当前集共 {shots.Count} 个镜头，有 {missing.Count} 个镜头还没有视频，缺一个都不能导出：\n\n{lines}\n\n已为你选中第一个缺失的镜头，请先生成视频后再导出。",
+                "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+            // 自动选中第一个缺失的镜头（Shots 集合与 GetShotsAsync 返回同一批实例，可直接赋值）
+            SelectedShot = missing[0];
+            return false;
+        }
+
+        /// <summary>原声导出：将当前集所有镜头视频按顺序拼接成一个视频，保存到用户选择的位置</summary>
+        private async void ExportOriginal()
+        {
+            if (!CanExport) return;
+            try
+            {
+                if (!ValidateAllShotsHaveVideo()) return;
+                var videos = CollectShotVideoPaths();
+                var savePath = AskSavePath("原声导出");
+                if (savePath is null) return;
+
+                IsExporting = true;
+                ExportStatusText = "正在合并视频…";
+                var task = _engine.Submit("videoCompose", new VideoComposeRequest { Videos = videos });
+                var result = await WaitForTaskAsync(task, "合并视频");
+                if (result.Status != "completed" || string.IsNullOrEmpty(result.RelativePath))
+                    throw new InvalidOperationException(result.Message ?? "合并失败");
+
+                CopyToSavePath(result.RelativePath, savePath);
+                ExportStatusText = "原声导出完成";
+                MessageBox.Show($"原声导出完成：\n{savePath}", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                ExportStatusText = "导出失败";
+                MessageBox.Show("原声导出失败：" + ex.Message, "MjStudio", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsExporting = false;
+            }
+        }
+
+        /// <summary>换声导出：每个镜头视频做声音转换（用所选角色声线克隆），再拼接成一个视频，保存到用户选择的位置</summary>
+        private async void ExportVoiceSwap()
+        {
+            if (!CanExport) return;
+            try
+            {
+                if (!ValidateAllShotsHaveVideo()) return;
+                var videos = CollectShotVideoPaths();
+
+                var voiceRel = PickVoice();
+                if (voiceRel is null) return;
+
+                var savePath = AskSavePath("换声导出");
+                if (savePath is null) return;
+
+                IsExporting = true;
+                var swapped = new List<string>();
+                for (int i = 0; i < videos.Count; i++)
+                {
+                    ExportStatusText = $"正在换声 镜头 {i + 1}/{videos.Count}…";
+                    var task = _engine.Submit("videoExport", new VideoExportRequest
+                    {
+                        SourceVideo = videos[i],
+                        TargetVoice = voiceRel
+                    });
+                    var result = await WaitForTaskAsync(task, "换声");
+                    if (result.Status != "completed" || string.IsNullOrEmpty(result.RelativePath))
+                        throw new InvalidOperationException(result.Message ?? "换声失败");
+                    swapped.Add(result.RelativePath);
+                }
+
+                ExportStatusText = "正在合并换声后的视频…";
+                var composeTask = _engine.Submit("videoCompose", new VideoComposeRequest { Videos = swapped });
+                var composeResult = await WaitForTaskAsync(composeTask, "合并视频");
+                if (composeResult.Status != "completed" || string.IsNullOrEmpty(composeResult.RelativePath))
+                    throw new InvalidOperationException(composeResult.Message ?? "合并失败");
+
+                CopyToSavePath(composeResult.RelativePath, savePath);
+                ExportStatusText = "换声导出完成";
+                MessageBox.Show($"换声导出完成：\n{savePath}", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                ExportStatusText = "导出失败";
+                MessageBox.Show("换声导出失败：" + ex.Message, "MjStudio", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsExporting = false;
+            }
+        }
+
+        /// <summary>收集当前集所有镜头的视频相对路径（按镜头号排序）</summary>
+        private List<string> CollectShotVideoPaths()
+        {
+            if (SelectedEpisode is null) return new List<string>();
+            var shots = _shots.GetShotsAsync(SelectedEpisode.Id).GetAwaiter().GetResult()
+                .OrderBy(s => s.ShotNo).ToList();
+            var result = new List<string>();
+            foreach (var s in shots)
+            {
+                var full = _shots.GetShotAsync(s.Id).GetAwaiter().GetResult();
+                var rel = full?.VideoResource?.RelativePath;
+                if (string.IsNullOrEmpty(rel))
+                    throw new InvalidOperationException($"镜头#{s.ShotNo}「{s.Title}」还没有视频，请先生成视频");
+                result.Add(rel);
+            }
+            return result;
+        }
+
+        /// <summary>弹出对话框选择角色声线，返回声线音频的相对路径（取消返回 null）</summary>
+        private string? PickVoice()
+        {
+            var voices = _assets.GetAllWithRefsAsync(AssetTypeEnum.Voice).GetAwaiter().GetResult()
+                .Where(v => v.Resource is not null && !string.IsNullOrEmpty(v.Resource.RelativePath))
+                .ToList();
+            if (voices.Count == 0)
+            {
+                MessageBox.Show("没有可用的角色声线，请先在「资产」页创建声线资产并挂载音频", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return null;
+            }
+            var dialog = new Views.VoiceSelectDialog(voices);
+            dialog.Owner = System.Windows.Application.Current.MainWindow;
+            if (dialog.ShowDialog() == true && dialog.SelectedVoice is not null)
+                return dialog.SelectedVoice.Resource!.RelativePath;
+            return null;
+        }
+
+        /// <summary>弹出保存位置对话框</summary>
+        private string? AskSavePath(string title)
+        {
+            var dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = title,
+                Filter = "MP4 视频 (*.mp4)|*.mp4",
+                FileName = $"{_current.Require()}_{DateTime.Now:yyyyMMdd_HHmmss}.mp4",
+                DefaultExt = ".mp4"
+            };
+            return dlg.ShowDialog() == true ? dlg.FileName : null;
+        }
+
+        /// <summary>轮询任务直到完成/失败</summary>
+        private async Task<GenerationTask> WaitForTaskAsync(GenerationTask task, string label)
+        {
+            while (true)
+            {
+                var t = await _engine.PollAsync(task.TaskId, timeoutSec: 60);
+                if (t.Status is "completed" or "failed") return t;
+                ExportStatusText = $"{label}中…";
+            }
+        }
+
+        /// <summary>把资源目录中的产物复制到用户选择的保存位置</summary>
+        private void CopyToSavePath(string relativePath, string savePath)
+        {
+            var projectName = _current.Require();
+            var abs = _resourceStorage.GetAbsolutePath(projectName, relativePath);
+            if (!File.Exists(abs))
+                throw new FileNotFoundException($"产物不存在: {abs}");
+            var dir = Path.GetDirectoryName(savePath);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+            File.Copy(abs, savePath, overwrite: true);
+        }
+
+        // ==================== 视频生成 ====================
+
+        private bool CanGenerateVideo => _current.IsLoaded && SelectedShot is not null && !IsGeneratingVideo;
+
+        /// <summary>生成/重新生成当前镜头的视频</summary>
+        private async void GenerateVideo()
+        {
+            if (!CanGenerateVideo || SelectedShot is null) return;
+            try
+            {
+                // 1. 收集参考图（角色/场景/道具，按 MediaIndex 排序）
+                var shot = _shots.GetShotAsync(SelectedShot.Id).GetAwaiter().GetResult();
+                var imageRefs = shot?.AssetRefs
+                    .Where(r => r.RefType is not "bgm" and not "sfx")
+                    .OrderBy(r => r.MediaIndex)
+                    .ToList() ?? new List<ShotAssetRef>();
+
+                if (imageRefs.Count == 0)
+                {
+                    MessageBox.Show("请先绑定参考图资产（角色/场景/道具）", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var imagePaths = new List<string>();
+                foreach (var refItem in imageRefs)
+                {
+                    var rel = refItem.Asset?.Resource?.RelativePath;
+                    if (!string.IsNullOrEmpty(rel)) imagePaths.Add(rel);
+                }
+
+                if (imagePaths.Count == 0)
+                {
+                    MessageBox.Show("绑定的资产没有可用的参考图，请检查资产是否已挂载图片", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // 2. 构建视频生成请求
+                var prompt = SelectedShot.VideoPromptCn ?? SelectedShot.VideoContent ?? "";
+                if (string.IsNullOrWhiteSpace(prompt))
+                {
+                    MessageBox.Show("请填写视频提示词", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var seconds = (int)(SelectedShot.Duration ?? 10);
+                var request = new VideoGenRequest
+                {
+                    Prompt = prompt,
+                    Images = imagePaths,
+                    Seconds = seconds
+                };
+
+                // 3. 提交并轮询
+                IsGeneratingVideo = true;
+                ExportStatusText = "正在生成视频…";
+                var task = _engine.Submit("video", request);
+                var result = await WaitForTaskAsync(task, "生成视频");
+
+                if (result.Status != "completed" || string.IsNullOrEmpty(result.RelativePath))
+                    throw new InvalidOperationException(result.Message ?? "视频生成失败");
+
+                // 4. 挂载视频到镜头
+                await _shots.AttachVideoAsync(SelectedShot.Id, result.RelativePath, ResourcePurposeEnum.ShotVideo);
+
+                // 5. 刷新 UI
+                var shotNo = SelectedShot.ShotNo;
+                LoadShots();
+                var reselected = Shots.FirstOrDefault(s => s.ShotNo == shotNo);
+                if (reselected is not null) SelectedShot = reselected;
+
+                ExportStatusText = "视频生成完成";
+                MessageBox.Show("视频生成完成", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                ExportStatusText = "视频生成失败";
+                MessageBox.Show("视频生成失败：" + ex.Message, "MjStudio", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsGeneratingVideo = false;
             }
         }
     }
