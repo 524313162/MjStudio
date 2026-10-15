@@ -371,20 +371,28 @@
                                                         <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="Auto"/>
                                                                 <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="Auto"/>
                                                                 <ColumnDefinition Width="*"/>
                                                         </Grid.ColumnDefinitions>
                                                         <Button Grid.Column="0"
+                                                                Content="📦 批量生成"
+                                                                Style="{StaticResource SecondaryButton}"
+                                                                Command="{Binding OpenBatchGenCommand}"
+                                                                FontSize="13"
+                                                                ToolTip="一键生成所有图片/声音/视频资源"/>
+                                                        <Button Grid.Column="1"
                                                                 Content="🎬 原声导出"
                                                                 Style="{StaticResource PrimaryButton}"
                                                                 Command="{Binding ExportOriginalCommand}"
-                                                                FontSize="13"/>
-                                                        <Button Grid.Column="1"
+                                                                FontSize="13"
+                                                                Margin="8,0,0,0"/>
+                                                        <Button Grid.Column="2"
                                                                 Content="🎤 换声导出"
                                                                 Style="{StaticResource SecondaryButton}"
                                                                 Command="{Binding ExportVoiceSwapCommand}"
                                                                 FontSize="13"
                                                                 Margin="8,0,0,0"/>
-                                                        <TextBlock Grid.Column="2"
+                                                        <TextBlock Grid.Column="3"
                                                                    Text="{Binding ExportStatusText}"
                                                                    FontSize="12"
                                                                    Foreground="{StaticResource TextMutedBrush}"

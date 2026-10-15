@@ -10,11 +10,13 @@ namespace MjStudio.Application.Services
     {
         private readonly IProjectDbContextFactory _factory;
         private readonly CurrentProject _current;
+        private readonly ResourceStorageService _storage;
 
-        public ShotService(IProjectDbContextFactory factory, CurrentProject current)
+        public ShotService(IProjectDbContextFactory factory, CurrentProject current, ResourceStorageService storage)
         {
             _factory = factory;
             _current = current;
+            _storage = storage;
         }
 
         public async Task<List<Episode>> GetEpisodesAsync(long projectId)
@@ -180,6 +182,21 @@ namespace MjStudio.Application.Services
             // 参考图数量只统计图片类引用（角色/场景/道具），不含 bgm/sfx
             shot.RefImageCount = refs.Count(r => r.RefType is "character" or "scene" or "prop");
             shot.UpdatedTime = now;
+            await db.SaveChangesAsync();
+        }
+
+        public async Task ClearVideoAsync(long shotId)
+        {
+            var projectName = _current.Require();
+            await using var db = _factory.Create(projectName);
+            var shot = await db.Shots.Include(s => s.VideoResource).FirstAsync(s => s.Id == shotId);
+            if (shot.VideoResourceId is long rid && shot.VideoResource is { } res)
+            {
+                _storage.Delete(projectName, res.RelativePath);
+                db.Resources.Remove(res);
+            }
+            shot.VideoResourceId = null;
+            shot.UpdatedTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await db.SaveChangesAsync();
         }
     }

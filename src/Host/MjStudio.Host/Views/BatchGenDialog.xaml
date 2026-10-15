@@ -1,0 +1,488 @@
+<Window x:Class="MjStudio.Host.Views.BatchGenDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        Title="批量生成资源"
+        Width="960"
+        Height="640"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        ShowInTaskbar="False"
+        MinWidth="720"
+        MinHeight="480">
+    <Window.Resources>
+        <!-- 列表行操作按钮 -->
+        <Style x:Key="RowActionButton"
+               TargetType="Button">
+            <Setter Property="FontSize"
+                    Value="12"/>
+            <Setter Property="Padding"
+                    Value="12,4"/>
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+        </Style>
+        <!-- 状态文字：已完成显示绿色对勾 -->
+        <Style x:Key="StatusText"
+               TargetType="TextBlock">
+            <Setter Property="FontSize"
+                    Value="11"/>
+            <Setter Property="Foreground"
+                    Value="{StaticResource TextMutedBrush}"/>
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+            <Setter Property="Margin"
+                    Value="12,0"/>
+            <Setter Property="TextTrimming"
+                    Value="CharacterEllipsis"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasContent}"
+                             Value="True">
+                    <Setter Property="Foreground"
+                            Value="#2E7D32"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- 生成中旋转 loading 图标 -->
+        <Style x:Key="LoadingSpinner"
+               TargetType="TextBlock">
+            <Setter Property="Text"
+                    Value="◌"/>
+            <Setter Property="FontSize"
+                    Value="22"/>
+            <Setter Property="Foreground"
+                    Value="White"/>
+            <Setter Property="HorizontalAlignment"
+                    Value="Center"/>
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+            <Setter Property="RenderTransformOrigin"
+                    Value="0.5,0.5"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <RotateTransform/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsVisible"
+                         Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                 From="0"
+                                                 To="360"
+                                                 Duration="0:0:1"
+                                                 RepeatBehavior="Forever"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标签页 -->
+        <TabControl Grid.Row="0"
+                    SelectedIndex="{Binding SelectedTabIndex}"
+                    Background="Transparent"
+                    BorderThickness="0">
+            <!-- ===== 标签一：图片生成 ===== -->
+            <TabItem Header="🖼 图片生成">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0"
+                          Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0"
+                                Content="⚡ 全部生成"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding GenerateAllCommand}"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding StatusText}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                    <Border Grid.Row="1"
+                            Background="{StaticResource PageBgBrush}"
+                            CornerRadius="8"
+                            Padding="10">
+                        <Grid>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding ImageCards}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Vertical"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="White"
+                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10,8"
+                                                    Margin="0,0,0,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <!-- 缩略图（已生成可点击放大） -->
+                                                    <Border Grid.Column="0"
+                                                            Width="72"
+                                                            Height="48"
+                                                            CornerRadius="4"
+                                                            Background="{StaticResource PageBgBrush}">
+                                                        <Grid>
+                                                            <Image Source="{Binding ImagePath, Converter={StaticResource ImagePath}}"
+                                                                   Stretch="UniformToFill"
+                                                                   Cursor="Hand"
+                                                                   MouseLeftButtonDown="OnImageClick"
+                                                                   Visibility="{Binding HasImage, Converter={StaticResource BoolToVis}}"/>
+                                                            <TextBlock Text="🖼"
+                                                                       FontSize="20"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       Visibility="{Binding HasImage, Converter={StaticResource InverseBool}}"/>
+                                                            <!-- 生成中 loading 遮罩 -->
+                                                            <Border Background="#B3000000"
+                                                                    CornerRadius="4"
+                                                                    Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVis}}">
+                                                                <TextBlock Style="{StaticResource LoadingSpinner}"/>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+                                                    <!-- 类型 + 名称 -->
+                                                    <StackPanel Grid.Column="1"
+                                                                Margin="12,0,0,0"
+                                                                VerticalAlignment="Center">
+                                                        <Border Background="{StaticResource PrimaryLightBrush}"
+                                                                CornerRadius="4"
+                                                                Padding="6,1"
+                                                                HorizontalAlignment="Left">
+                                                            <TextBlock Text="{Binding TypeDisplay}"
+                                                                       FontSize="10"
+                                                                       Foreground="{StaticResource PrimaryBrush}"/>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="13"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                    <!-- 状态 -->
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding StatusText}"
+                                                               Style="{StaticResource StatusText}"/>
+                                                    <!-- 操作按钮 -->
+                                                    <Button Grid.Column="3"
+                                                            Style="{StaticResource RowActionButton}"
+                                                            Content="{Binding ActionButtonText}"
+                                                            Click="OnCardActionClick"
+                                                            ToolTip="生成或清理该资产内容"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <TextBlock Text="暂无角色/场景/道具资产"
+                                       Style="{StaticResource EmptyHint}"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding ImageCards.Count, Converter={StaticResource CountToVis}}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ===== 标签二：声音生成 ===== -->
+            <TabItem Header="🎵 声音生成">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0"
+                          Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0"
+                                Content="⚡ 全部生成"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding GenerateAllCommand}"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding StatusText}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                    <Border Grid.Row="1"
+                            Background="{StaticResource PageBgBrush}"
+                            CornerRadius="8"
+                            Padding="10">
+                        <Grid>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding AudioCards}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Vertical"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="White"
+                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10,8"
+                                                    Margin="0,0,0,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <!-- 图标（生成中显示 loading） -->
+                                                    <Border Grid.Column="0"
+                                                            Width="72"
+                                                            Height="48"
+                                                            CornerRadius="4"
+                                                            Background="{StaticResource PageBgBrush}">
+                                                        <Grid>
+                                                            <TextBlock Text="🎵"
+                                                                       FontSize="24"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"/>
+                                                            <Border Background="#B3000000"
+                                                                    CornerRadius="4"
+                                                                    Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVis}}">
+                                                                <TextBlock Style="{StaticResource LoadingSpinner}"/>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+                                                    <!-- 类型 + 名称 -->
+                                                    <StackPanel Grid.Column="1"
+                                                                Margin="12,0,0,0"
+                                                                VerticalAlignment="Center">
+                                                        <Border Background="{StaticResource PrimaryLightBrush}"
+                                                                CornerRadius="4"
+                                                                Padding="6,1"
+                                                                HorizontalAlignment="Left">
+                                                            <TextBlock Text="{Binding TypeDisplay}"
+                                                                       FontSize="10"
+                                                                       Foreground="{StaticResource PrimaryBrush}"/>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="13"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                    <!-- 状态 -->
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding StatusText}"
+                                                               Style="{StaticResource StatusText}"/>
+                                                    <!-- 操作按钮 -->
+                                                    <Button Grid.Column="3"
+                                                            Style="{StaticResource RowActionButton}"
+                                                            Content="{Binding ActionButtonText}"
+                                                            Click="OnCardActionClick"
+                                                            ToolTip="生成或清理该资产内容"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <TextBlock Text="暂无 BGM/音效/声线资产"
+                                       Style="{StaticResource EmptyHint}"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding AudioCards.Count, Converter={StaticResource CountToVis}}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ===== 标签三：视频生成 ===== -->
+            <TabItem Header="🎬 视频生成">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0"
+                          Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0"
+                                Content="⚡ 全部生成"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding GenerateAllCommand}"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding StatusText}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                    <Border Grid.Row="1"
+                            Background="{StaticResource PageBgBrush}"
+                            CornerRadius="8"
+                            Padding="10">
+                        <Grid>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding VideoCards}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Vertical"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="White"
+                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10,8"
+                                                    Margin="0,0,0,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <!-- 参考图（分镜绑定的资产） -->
+                                                    <Border Grid.Column="0"
+                                                            Width="72"
+                                                            Height="48"
+                                                            CornerRadius="4"
+                                                            Background="{StaticResource PageBgBrush}">
+                                                        <Grid>
+                                                            <ItemsControl ItemsSource="{Binding ReferenceImages}"
+                                                                          Visibility="{Binding HasReferenceImages, Converter={StaticResource BoolToVis}}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <WrapPanel Orientation="Horizontal"/>
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Border Width="22"
+                                                                                Height="22"
+                                                                                CornerRadius="3"
+                                                                                Background="White"
+                                                                                Margin="2">
+                                                                            <Image Source="{Binding Converter={StaticResource ImagePath}}"
+                                                                                   Stretch="UniformToFill"/>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                            <TextBlock Text="🎬"
+                                                                       FontSize="24"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       Visibility="{Binding HasReferenceImages, Converter={StaticResource InverseBool}}"/>
+                                                            <!-- 生成中 loading 遮罩 -->
+                                                            <Border Background="#B3000000"
+                                                                    CornerRadius="4"
+                                                                    Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVis}}">
+                                                                <TextBlock Style="{StaticResource LoadingSpinner}"/>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+                                                    <!-- 类型 + 名称 -->
+                                                    <StackPanel Grid.Column="1"
+                                                                Margin="12,0,0,0"
+                                                                VerticalAlignment="Center">
+                                                        <Border Background="{StaticResource PrimaryLightBrush}"
+                                                                CornerRadius="4"
+                                                                Padding="6,1"
+                                                                HorizontalAlignment="Left">
+                                                            <TextBlock Text="{Binding TypeDisplay}"
+                                                                       FontSize="10"
+                                                                       Foreground="{StaticResource PrimaryBrush}"/>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="13"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                    <!-- 状态 -->
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding StatusText}"
+                                                               Style="{StaticResource StatusText}"/>
+                                                    <!-- 操作按钮 -->
+                                                    <Button Grid.Column="3"
+                                                            Style="{StaticResource RowActionButton}"
+                                                            Content="{Binding ActionButtonText}"
+                                                            Click="OnCardActionClick"
+                                                            ToolTip="生成或清理该分镜视频"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <TextBlock Text="暂无分镜镜头"
+                                       Style="{StaticResource EmptyHint}"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding VideoCards.Count, Converter={StaticResource CountToVis}}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- 底部按钮 -->
+        <Grid Grid.Row="1"
+              Margin="0,16,0,0">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Content="关闭"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CloseCommand}"
+                        MinWidth="90"
+                        FontSize="13"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

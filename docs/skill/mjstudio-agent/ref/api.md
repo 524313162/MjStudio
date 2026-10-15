@@ -721,7 +721,96 @@ Invoke-RestMethod -Uri "http://127.0.0.1:6066/api/resources/upload" -Method Post
 
 ---
 
-## 十、健康检查
+## 十、批量生成（/api/batchgen）
+
+> 分模块（`image` / `audio` / `video`）批量生成项目内全部资产/分镜，支持「全部生成（自动跳过已存在）」「单项生成」「单项清理」。全部依赖当前项目上下文（先 load 项目）。
+> 生成走 ComfyUI 工作流（图片 ZImage / 音频 STABLE-BGM / 视频 MinimaxH3），需 ComfyUI 已启动。
+
+### 10.1 列出某模块全部资产/分镜
+
+- **`GET /api/batchgen/items?module={module}`**
+- Query 参数：`module` 模块类型（`image` / `audio` / `video`）
+- 返回：`BatchGenItem[]`（见下）
+- 错误：未知模块 → 400 `{ "message": "..." }`
+
+**BatchGenItem**
+
+| 字段                  | 类型     | 说明                                                 |
+| --------------------- | -------- | ---------------------------------------------------- |
+| `id`                  | long     | 资产/分镜 id                                         |
+| `name`                | string   | 名称                                                 |
+| `typeDisplay`         | string   | 类型显示（角色/场景/道具/BGM/音乐/音效/声线/镜头#N） |
+| `description`         | string?  | 描述                                                 |
+| `moduleType`          | string   | 模块类型（image/audio/video）                        |
+| `assetType`           | int?     | 资产类型（1~7，分镜为 null）                         |
+| `shotNo`              | int?     | 镜头号（分镜用）                                     |
+| `episodeNo`           | int?     | 集号（分镜用）                                       |
+| `hasContent`          | bool     | 是否已有内容（图片/声音/视频）                       |
+| `prompt`              | string?  | 正向提示词                                           |
+| `negativePrompt`      | string?  | 反向提示词                                           |
+| `duration`            | float?   | 时长（秒，分镜用）                                   |
+| `referenceImagePaths` | string[] | 参考图相对路径（分镜视频生成用）                     |
+| `relativePath`        | string?  | 主资源相对路径（缩略图/视频预览用）                  |
+
+### 10.2 全部生成（自动跳过已存在）
+
+- **`POST /api/batchgen/generate-all`**
+- 请求体：`{ "module": "image" }`（`module` = image / audio / video）
+- 返回：BatchGenAllResponse（见下）
+- **逻辑**：遍历该模块全部资产/分镜，**自动过滤掉已生成（`hasContent=true`）的**，仅对未生成项提交异步生成任务（增量生成）
+- **轮询**：返回的 `taskId` 通过 `GET /api/gen/{type}/{taskId}` 轮询（type 映射：image 模块 → character/scene/prop，audio 模块 → bgm/sfx，video 模块 → video）
+
+**BatchGenAllResponse**
+
+| 字段      | 类型                   | 说明                     |
+| --------- | ---------------------- | ------------------------ |
+| `total`   | int                    | 该模块总数               |
+| `pending` | int                    | 本次实际提交（未生成）数 |
+| `results` | BatchGenSubmitResult[] | 每项提交结果             |
+
+**BatchGenSubmitResult**
+
+| 字段      | 类型    | 说明                                |
+| --------- | ------- | ----------------------------------- |
+| `id`      | long    | 资产/分镜 id                        |
+| `name`    | string? | 名称                                |
+| `success` | bool    | 是否提交成功                        |
+| `taskId`  | string? | 生成任务 id（成功时返回，用于轮询） |
+| `message` | string? | 失败原因                            |
+
+### 10.3 单项生成
+
+- **`POST /api/batchgen/generate`**
+- 请求体：BatchGenItem（至少含 `id` / `moduleType` / `prompt`；分镜还需 `referenceImagePaths` / `duration`）
+- 返回：BatchGenSubmitResult
+- **说明**：针对某个具体资产/分镜单独触发生成
+
+### 10.4 单项清理（重置）
+
+- **`POST /api/batchgen/clear`**
+- 请求体：BatchGenItem（至少含 `id` / `moduleType`）
+- 返回：`{ "message": "已清理" }`
+- **逻辑**：删除存储中的对应媒体文件，更新数据库状态（重置为未生成）
+
+**示例（全部生成图片模块，实测结构）**
+
+```
+POST /api/batchgen/generate-all
+{ "module": "image" }
+→ 200
+{
+  "total": 5,
+  "pending": 2,
+  "results": [
+    { "id": 2001, "name": "星野", "success": true, "taskId": "a1b2c3" },
+    { "id": 2003, "name": "观测站", "success": true, "taskId": "d4e5f6" }
+  ]
+}
+```
+
+---
+
+## 十一、健康检查
 
 - **`GET /health`**
 - 参数：无
@@ -730,7 +819,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:6066/api/resources/upload" -Method Post
 
 ---
 
-## 十一、Agent 接入约定
+## 十二、Agent 接入约定
 
 1. **写入顺序固定**：项目 → load → 剧本 → 资产 → 分镜（分镜依赖集 id，集依赖项目上下文）
 2. **幂等由调用方保证**：服务端 POST 在 `id` 为空时一律新建、不去重。写入前先 GET 列表查重（项目按名/剧本按集号/资产按名/集按集号/镜头按集内镜号），已存在则跳过或带 `id` 更新（`agent_pipeline.py` 即此策略）
@@ -740,7 +829,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:6066/api/resources/upload" -Method Post
 6. **资源文件**：上传用 `POST /api/resources/upload`（multipart），下载用 `GET /api/resources/{id}/file`；资产关联资源用 `PUT /api/assets/{id}/resource`
 7. **评审**：agent 经 `PUT /api/reviews/{stage}` 写结论、`POST /api/reviews/{stage}/revision` 记打回（>5 次自动升级）
 
-## 十二、最小调用示例（Python 标准库，实测通过）
+## 十三、最小调用示例（Python 标准库，实测通过）
 
 ```python
 import json, urllib.parse, urllib.request

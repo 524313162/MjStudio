@@ -31,5 +31,8 @@ namespace MjStudio.Application.Shared.Services
 
         /// <summary>为资产挂载主资源（图片/音频）</summary>
         Task<Resource> AttachResourceAsync(long assetId, string relativePath, string mediaType, ResourcePurposeEnum purpose, float? duration = null);
+
+        /// <summary>清除资产主资源（删文件+记录+清引用，重置为未生成状态）</summary>
+        Task ClearResourceAsync(long assetId);
     }
 }

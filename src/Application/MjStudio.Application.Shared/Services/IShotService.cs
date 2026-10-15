@@ -27,5 +27,8 @@ namespace MjStudio.Application.Shared.Services
 
         /// <summary>设置镜头资产引用（参考图排定；bgm/sfx 含播放时间段）</summary>
         Task SetAssetRefsAsync(long shotId, List<(long AssetId, int MediaIndex, string RefType, float? StartRange, float? EndRange)> refs);
+
+        /// <summary>清除镜头视频资源（删文件+记录+清引用，重置为未生成状态）</summary>
+        Task ClearVideoAsync(long shotId);
     }
 }

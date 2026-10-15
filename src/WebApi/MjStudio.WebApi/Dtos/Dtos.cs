@@ -279,4 +279,53 @@ namespace MjStudio.WebApi.Dtos
         /// <summary>产物相对资源目录路径（完成后返回）</summary>
         public string? RelativePath { get; set; }
     }
+
+    // ==================== 批量生成接口 ====================
+
+    /// <summary>批量生成卡片项（资产/分镜及其状态）</summary>
+    public class BatchGenItem
+    {
+        public long Id { get; set; }
+        public string Name { get; set; } = "";
+        public string TypeDisplay { get; set; } = "";
+        public string? Description { get; set; }
+        /// <summary>模块类型：image / audio / video</summary>
+        public string ModuleType { get; set; } = "";
+        public AssetTypeEnum? AssetType { get; set; }
+        public int? ShotNo { get; set; }
+        public int? EpisodeNo { get; set; }
+        /// <summary>是否已有内容</summary>
+        public bool HasContent { get; set; }
+        public string? Prompt { get; set; }
+        public string? NegativePrompt { get; set; }
+        public float? Duration { get; set; }
+        public List<string> ReferenceImagePaths { get; set; } = new();
+        /// <summary>主资源相对路径（缩略图/视频预览用）</summary>
+        public string? RelativePath { get; set; }
+    }
+
+    /// <summary>单项生成提交结果</summary>
+    public class BatchGenSubmitResult
+    {
+        public long Id { get; set; }
+        public string? Name { get; set; }
+        public bool Success { get; set; }
+        public string? TaskId { get; set; }
+        public string? Message { get; set; }
+    }
+
+    /// <summary>批量生成响应</summary>
+    public class BatchGenAllResponse
+    {
+        public int Total { get; set; }
+        public int Pending { get; set; }
+        public List<BatchGenSubmitResult> Results { get; set; } = new();
+    }
+
+    /// <summary>批量生成模块请求（全部生成用）</summary>
+    public class BatchGenModuleRequest
+    {
+        /// <summary>模块类型：image / audio / video</summary>
+        public string Module { get; set; } = "";
+    }
 }

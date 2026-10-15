@@ -72,6 +72,9 @@ namespace MjStudio.WebApi
             // FFmpeg + 生成引擎（单例）
             services.AddSingleton<FfmpegService>();
             services.AddSingleton<GenerationEngine>();
+
+            // 批量生成服务（Scoped：依赖 Scoped 的 IAssetService/IShotService/IResourceService）
+            services.AddScoped<BatchGenService>();
         }
     }
 }

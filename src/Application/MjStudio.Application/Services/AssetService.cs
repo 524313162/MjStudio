@@ -10,11 +10,13 @@ namespace MjStudio.Application.Services
     {
         private readonly IProjectDbContextFactory _factory;
         private readonly CurrentProject _current;
+        private readonly ResourceStorageService _storage;
 
-        public AssetService(IProjectDbContextFactory factory, CurrentProject current)
+        public AssetService(IProjectDbContextFactory factory, CurrentProject current, ResourceStorageService storage)
         {
             _factory = factory;
             _current = current;
+            _storage = storage;
         }
 
         private async Task<ProjectDbContext> DbAsync()
@@ -183,6 +185,21 @@ namespace MjStudio.Application.Services
             asset.UpdatedTime = now;
             await db.SaveChangesAsync();
             return resource;
+        }
+
+        public async Task ClearResourceAsync(long assetId)
+        {
+            var projectName = _current.Require();
+            await using var db = _factory.Create(projectName);
+            var asset = await db.Assets.Include(a => a.Resource).FirstAsync(a => a.Id == assetId);
+            if (asset.ResourceId is long rid && asset.Resource is { } res)
+            {
+                _storage.Delete(projectName, res.RelativePath);
+                db.Resources.Remove(res);
+            }
+            asset.ResourceId = null;
+            asset.UpdatedTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            await db.SaveChangesAsync();
         }
     }
 }

@@ -100,6 +100,7 @@ namespace MjStudio.Host.ViewModels
         public RelayCommand ExportOriginalCommand { get; }
         public RelayCommand ExportVoiceSwapCommand { get; }
         public RelayCommand GenerateVideoCommand { get; }
+        public RelayCommand OpenBatchGenCommand { get; }
 
         // ===== 导出状态 =====
         private bool _isExporting;
@@ -148,6 +149,7 @@ namespace MjStudio.Host.ViewModels
             ExportOriginalCommand = new RelayCommand(ExportOriginal, () => CanExport);
             ExportVoiceSwapCommand = new RelayCommand(ExportVoiceSwap, () => CanExport);
             GenerateVideoCommand = new RelayCommand(GenerateVideo, () => CanGenerateVideo);
+            OpenBatchGenCommand = new RelayCommand(OpenBatchGen, () => _current.IsLoaded);
 
             Refresh();
         }
@@ -633,6 +635,24 @@ namespace MjStudio.Host.ViewModels
             var dir = Path.GetDirectoryName(savePath);
             if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
             File.Copy(abs, savePath, overwrite: true);
+        }
+
+        // ==================== 批量生成 ====================
+
+        /// <summary>打开批量生成弹窗（图片/声音/视频 3 个标签页）</summary>
+        private void OpenBatchGen()
+        {
+            if (!_current.IsLoaded)
+            {
+                MessageBox.Show("请先加载项目", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            var vm = new BatchGenViewModel(_services);
+            var dialog = new Views.BatchGenDialog(vm)
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+            dialog.ShowDialog();
         }
 
         // ==================== 视频生成 ====================
