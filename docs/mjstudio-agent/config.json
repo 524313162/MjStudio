@@ -1,0 +1,15 @@
+{
+  "_说明": "迁移到任何机器/Agent 时，只需改这两个字段；baseUrl 端口可在 MjStudio 设置页改，改完软件会自动重启 API。",
+  "baseUrl": "http://127.0.0.1:6066",
+  "exePath": "E:\\01.AI-Project\\MjStudio\\src\\Host\\MjStudio.Host\\bin\\Debug\\net10.0-windows\\MjStudio.Host.exe",
+  "_exePath备选": "无界面纯 API 模式可改用同目录下的 MjStudio.WebApi.exe",
+  "launchTimeoutSec": 90,
+  "defaults": {
+    "episodeDuration": 120,
+    "aspectRatio": 1,
+    "voiceLanguage": "中文普通话",
+    "originalOrAdapted": "原创",
+    "hasOpeningEnding": false,
+    "status": 0
+  }
+}

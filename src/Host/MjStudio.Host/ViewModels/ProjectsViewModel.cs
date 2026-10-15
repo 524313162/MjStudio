@@ -47,6 +47,9 @@ namespace MjStudio.Host.ViewModels
         public string NewProjectName { get => _newProjectName; set => SetProperty(ref _newProjectName, value); }
 
         // ===== 编辑表单字段 =====
+        /// <summary>项目名称（只读展示：项目名即数据库名与资源目录名，重命名需后端支持，暂不可改）</summary>
+        public string FormName => SelectedProject?.Name ?? "";
+
         private string _formStoryName = "";
         public string FormStoryName { get => _formStoryName; set => SetProperty(ref _formStoryName, value); }
         private string _formWorldview = "";
@@ -107,6 +110,8 @@ namespace MjStudio.Host.ViewModels
         public RelayCommand CancelCreateCommand { get; }
         public RelayCommand SaveCommand { get; }
         public RelayCommand DeleteCommand { get; }
+        /// <summary>卡片右上角角标直接删除（参数为 Project，无需先打开抽屉）</summary>
+        public RelayCommand DeleteCardCommand { get; }
         public RelayCommand OpenDrawerCommand { get; }
         public RelayCommand CloseDrawerCommand { get; }
         public RelayCommand OpenShotsCommand { get; }
@@ -131,6 +136,7 @@ namespace MjStudio.Host.ViewModels
             CancelCreateCommand = new RelayCommand(CancelCreate);
             SaveCommand = new RelayCommand(Save);
             DeleteCommand = new RelayCommand(Delete);
+            DeleteCardCommand = new RelayCommand(DeleteCard);
             OpenDrawerCommand = new RelayCommand(OpenDrawer);
             CloseDrawerCommand = new RelayCommand(CloseDrawer);
             OpenShotsCommand = new RelayCommand(OpenShots);
@@ -210,6 +216,9 @@ namespace MjStudio.Host.ViewModels
                 _current.Set(project.Name);
                 CurrentProjectName = project.Name;
                 SelectedProject = project;
+                // 重置多选下拉展开态，避免残留上一个项目的展开状态
+                IsPlatformOpen = false;
+                IsGenreOpen = false;
                 LoadForm(project);
                 View?.ShowDrawer();
                 ProjectChanged?.Invoke(project.Name);
@@ -270,6 +279,10 @@ namespace MjStudio.Host.ViewModels
                 };
                 target.Add(item);
             }
+            // 关键：PlatformDisplay / GenreDisplay 是只读计算属性，重建集合不会自动通知，
+            // 必须显式刷新，否则打开抽屉时显示的还是上一个项目的值（要勾选一次才更新）。
+            OnPropertyChanged(nameof(PlatformDisplay));
+            OnPropertyChanged(nameof(GenreDisplay));
         }
 
         private static string JoinSelected(ObservableCollection<SelectableItem> items)
@@ -304,6 +317,8 @@ namespace MjStudio.Host.ViewModels
             FormStatus = p.Status;
             FormDeliverables = p.Deliverables ?? "";
             FormCurrentStage = p.CurrentStage;
+            // FormName 是只读计算属性，SelectedProject 变更后需手动通知
+            OnPropertyChanged(nameof(FormName));
         }
 
         private void ClearForm()
@@ -377,11 +392,23 @@ namespace MjStudio.Host.ViewModels
                 if (_current.Name != SelectedProject.Name)
                     _current.Set(SelectedProject.Name);
 
+                // 数字字段校验：解析失败/非正数时中止保存，避免静默使用旧值
+                if (!int.TryParse(FormTotalEpisodes, out var te) || te <= 0)
+                {
+                    MessageBox.Show("总集数必须是大于 0 的正整数，请检查后重试。", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                if (!int.TryParse(FormEpisodeDuration, out var ed) || ed <= 0)
+                {
+                    MessageBox.Show("每集时长（秒）必须是大于 0 的正整数，请检查后重试。", "MjStudio", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 SelectedProject.StoryName = FormStoryName;
                 SelectedProject.Worldview = FormWorldview;
                 SelectedProject.Description = FormDescription;
-                if (int.TryParse(FormTotalEpisodes, out var te)) SelectedProject.TotalEpisodes = te;
-                if (int.TryParse(FormEpisodeDuration, out var ed)) SelectedProject.EpisodeDuration = ed;
+                SelectedProject.TotalEpisodes = te;
+                SelectedProject.EpisodeDuration = ed;
                 SelectedProject.AspectRatio = FormAspectRatio;
                 SelectedProject.TargetPlatform = JoinSelected(PlatformItems);
                 SelectedProject.Genre = JoinSelected(GenreItems);
@@ -405,7 +432,43 @@ namespace MjStudio.Host.ViewModels
             }
         }
 
-        /// <summary>删除项目</summary>
+        /// <summary>卡片右上角角标删除：确认后删除，若删的是当前项目则清空当前项目</summary>
+        private void DeleteCard(object? parameter)
+        {
+            if (parameter is not Project project) return;
+
+            if (MessageBox.Show(
+                $"确定删除项目「{project.Name}」？\n\n将删除项目数据库与全部资源文件，此操作不可恢复！",
+                "删除项目", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                var deletedName = project.Name;
+                _projects.DeleteAsync(deletedName).GetAwaiter().GetResult();
+
+                // 删的正好是当前项目 → 清空当前项目，避免后续操作指向已删除项目
+                if (string.Equals(_current.Name, deletedName, StringComparison.Ordinal))
+                    _current.Clear();
+
+                // 抽屉里正在编辑的也是它 → 收起抽屉
+                if (SelectedProject is not null && string.Equals(SelectedProject.Name, deletedName, StringComparison.Ordinal))
+                {
+                    View?.HideDrawer();
+                    SelectedProject = null;
+                    ClearForm();
+                }
+
+                Refresh();
+                ProjectChanged?.Invoke(_current.Name);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("删除失败：" + ex.Message, "MjStudio", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>删除项目（抽屉内「删除项目」按钮）</summary>
         private void Delete()
         {
             if (SelectedProject is null) return;

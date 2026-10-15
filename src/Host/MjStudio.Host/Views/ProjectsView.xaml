@@ -67,8 +67,9 @@
                                                            Style="{StaticResource EmptyHint}"/>
                                         </StackPanel>
 
-                                        <!-- 卡片列表 -->
-                                        <ItemsControl ItemsSource="{Binding FilteredCards}">
+                                        <!-- 卡片列表（顶部对齐：不随可视区高度拉伸） -->
+                                        <ItemsControl ItemsSource="{Binding FilteredCards}"
+                                                      VerticalAlignment="Top">
                                                 <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>
                                                                 <UniformGrid Columns="4"/>
@@ -81,6 +82,7 @@
                                                                         BorderThickness="1"
                                                                         CornerRadius="10"
                                                                         Margin="0,0,12,12"
+                                                                        Height="224"
                                                                         Cursor="Hand"
                                                                         MouseLeftButtonDown="OnCardClick">
                                                                         <Border.Effect>
@@ -103,24 +105,44 @@
                                                                                 </Style>
                                                                         </Border.Style>
 
-                                                                        <StackPanel>
+                                                                        <Grid>
+                                                                                <Grid.RowDefinitions>
+                                                                                        <RowDefinition Height="4"/>
+                                                                                        <RowDefinition Height="*"/>
+                                                                                </Grid.RowDefinitions>
                                                                                 <!-- 顶部强调条 -->
-                                                                                <Border Height="4"
+                                                                                <Border Grid.Row="0"
                                                                                         CornerRadius="12,12,0,0"
                                                                                         Background="{StaticResource PrimaryBrush}"/>
 
-                                                                                <!-- 内容区 -->
-                                                                                <Border Padding="14,12,14,14">
-                                                                                        <StackPanel>
-                                                                                                <!-- 名称 + 当前标记 -->
-                                                                                                <StackPanel Orientation="Horizontal"
-                                                                                                            Margin="0,0,0,4">
-                                                                                                        <TextBlock Text="{Binding Name}"
+                                                                                <!-- 内容区：行栅格，底部按钮始终锚定，标签区吃掉剩余空间 -->
+                                                                                <Border Grid.Row="1" Padding="14,12,14,14">
+                                                                                        <Grid>
+                                                                                                <Grid.RowDefinitions>
+                                                                                                        <RowDefinition Height="Auto"/>
+                                                                                                        <RowDefinition Height="Auto"/>
+                                                                                                        <RowDefinition Height="*"/>
+                                                                                                        <RowDefinition Height="Auto"/>
+                                                                                                        <RowDefinition Height="Auto"/>
+                                                                                                        <RowDefinition Height="Auto"/>
+                                                                                                </Grid.RowDefinitions>
+                                                                                                <!-- 名称 + 当前标记（名称占满剩余宽度后省略，徽标不被挤出卡片） -->
+                                                                                                <!-- 右侧留 26px 给删除角标，避免与「当前」徽标重叠 -->
+                                                                                                <Grid Grid.Row="0"
+                                                                                                      Margin="0,0,26,4">
+                                                                                                        <Grid.ColumnDefinitions>
+                                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                                        </Grid.ColumnDefinitions>
+                                                                                                        <TextBlock Grid.Column="0"
+                                                                                                                   Text="{Binding Name}"
                                                                                                                    FontSize="15"
                                                                                                                    FontWeight="Bold"
                                                                                                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                                                                                                   VerticalAlignment="Center"
                                                                                                                    TextTrimming="CharacterEllipsis"/>
-                                                                                                        <Border Background="{StaticResource PrimaryBrush}"
+                                                                                                        <Border Grid.Column="1"
+                                                                                                                Background="{StaticResource PrimaryBrush}"
                                                                                                                 CornerRadius="4"
                                                                                                                 Padding="6,2"
                                                                                                                 Margin="8,0,0,0"
@@ -136,20 +158,29 @@
                                                                                                                            FontSize="10"
                                                                                                                            Foreground="White"/>
                                                                                                         </Border>
-                                                                                                </StackPanel>
+                                                                                                </Grid>
 
                                                                                                 <!-- 故事名称 -->
-                                                                                                <TextBlock Text="{Binding StoryName, TargetNullValue='未命名', FallbackValue='未命名'}"
+                                                                                                <TextBlock Grid.Row="1"
+                                                                                                           Text="{Binding StoryName, TargetNullValue='未命名', FallbackValue='未命名'}"
                                                                                                            FontSize="12"
                                                                                                            Foreground="{StaticResource TextSecondaryBrush}"
                                                                                                            TextTrimming="CharacterEllipsis"
                                                                                                            Margin="0,0,0,8"/>
 
-                                                                                                <!-- 规格信息：题材 / 平台 分列标签，避免整块显示 -->
-                                                                                                <StackPanel Margin="0,0,0,8">
+                                                                                                <!-- 规格信息：题材 / 平台 各固定单行，超出裁剪，避免换行顶高卡片 -->
+                                                                                                <Grid Grid.Row="2"
+                                                                                                      Margin="0,0,0,8"
+                                                                                                      VerticalAlignment="Top"
+                                                                                                      ClipToBounds="True">
+                                                                                                        <Grid.RowDefinitions>
+                                                                                                                <RowDefinition Height="24"/>
+                                                                                                                <RowDefinition Height="24"/>
+                                                                                                        </Grid.RowDefinitions>
                                                                                                         <!-- 题材 -->
-                                                                                                        <StackPanel Orientation="Horizontal"
-                                                                                                                    Margin="0,0,0,6">
+                                                                                                        <StackPanel Grid.Row="0"
+                                                                                                                    Orientation="Horizontal"
+                                                                                                                    ClipToBounds="True">
                                                                                                                 <TextBlock Text="题材"
                                                                                                                            Width="40"
                                                                                                                            VerticalAlignment="Center"
@@ -167,7 +198,7 @@
                                                                                                                                         <Border Background="{StaticResource PageBgBrush}"
                                                                                                                                                 CornerRadius="4"
                                                                                                                                                 Padding="8,3"
-                                                                                                                                                Margin="0,0,6,4">
+                                                                                                                                                Margin="0,0,6,0">
                                                                                                                                                 <TextBlock Text="{Binding}"
                                                                                                                                                            FontSize="11"
                                                                                                                                                            Foreground="{StaticResource TextSecondaryBrush}"/>
@@ -177,7 +208,9 @@
                                                                                                                 </ItemsControl>
                                                                                                         </StackPanel>
                                                                                                         <!-- 平台 -->
-                                                                                                        <StackPanel Orientation="Horizontal">
+                                                                                                        <StackPanel Grid.Row="1"
+                                                                                                                    Orientation="Horizontal"
+                                                                                                                    ClipToBounds="True">
                                                                                                                 <TextBlock Text="平台"
                                                                                                                            Width="40"
                                                                                                                            VerticalAlignment="Center"
@@ -195,7 +228,7 @@
                                                                                                                                         <Border Background="{StaticResource PageBgBrush}"
                                                                                                                                                 CornerRadius="4"
                                                                                                                                                 Padding="8,3"
-                                                                                                                                                Margin="0,0,6,4">
+                                                                                                                                                Margin="0,0,6,0">
                                                                                                                                                 <TextBlock Text="{Binding}"
                                                                                                                                                            FontSize="11"
                                                                                                                                                            Foreground="{StaticResource TextSecondaryBrush}"/>
@@ -204,15 +237,18 @@
                                                                                                                         </ItemsControl.ItemTemplate>
                                                                                                                 </ItemsControl>
                                                                                                         </StackPanel>
-                                                                                                </StackPanel>
+                                                                                                </Grid>
 
                                                                                                 <!-- 分隔线 -->
-                                                                                                <Border Height="1"
+                                                                                                <Border Grid.Row="3"
+                                                                                                        Height="1"
                                                                                                         Background="{StaticResource BorderBrush}"
                                                                                                         Margin="0,0,0,8"/>
 
                                                                                                 <!-- 规格行：画幅 · 集数 · 环节 -->
-                                                                                                <StackPanel Orientation="Horizontal"
+                                                                                                <StackPanel Grid.Row="4"
+                                                                                                            Orientation="Horizontal"
+                                                                                                            ClipToBounds="True"
                                                                                                             Margin="0,0,0,10">
                                                                                                         <Border Background="{StaticResource PrimaryLightBrush}"
                                                                                                                 CornerRadius="4"
@@ -238,7 +274,7 @@
                                                                                                 </StackPanel>
 
                                                                                                 <!-- 创作入口：剧本创作（左）+ 漫剧创作（右） -->
-                                                                                                <Grid>
+                                                                                                <Grid Grid.Row="5">
                                                                                                         <Grid.ColumnDefinitions>
                                                                                                                 <ColumnDefinition Width="*"/>
                                                                                                                 <ColumnDefinition Width="8"/>
@@ -259,9 +295,62 @@
                                                                                                                 Command="{Binding DataContext.OpenShotsCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                                                                                 CommandParameter="{Binding}"/>
                                                                                                 </Grid>
-                                                                                        </StackPanel>
+                                                                                        </Grid>
                                                                                 </Border>
-                                                                        </StackPanel>
+
+                                                                                <!-- 右上角删除角标（叠在内容之上；Button 内部会把 MouseLeftButtonDown 标记为已处理，不会误触发卡片点击） -->
+                                                                                <Button Grid.Row="1"
+                                                                                        HorizontalAlignment="Right"
+                                                                                        VerticalAlignment="Top"
+                                                                                        Margin="0,5,7,0"
+                                                                                        Width="22"
+                                                                                        Height="22"
+                                                                                        Cursor="Hand"
+                                                                                        ToolTip="删除项目"
+                                                                                        Command="{Binding DataContext.DeleteCardCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                        CommandParameter="{Binding}">
+                                                                                        <Button.Template>
+                                                                                                <ControlTemplate TargetType="Button">
+                                                                                                        <Border x:Name="Bd"
+                                                                                                                CornerRadius="11"
+                                                                                                                Background="#FFFFFF"
+                                                                                                                BorderBrush="{StaticResource BorderBrush}"
+                                                                                                                BorderThickness="1">
+                                                                                                                <TextBlock x:Name="Tx"
+                                                                                                                           Text="✕"
+                                                                                                                           FontSize="10"
+                                                                                                                           FontWeight="Bold"
+                                                                                                                           HorizontalAlignment="Center"
+                                                                                                                           VerticalAlignment="Center"
+                                                                                                                           Foreground="{StaticResource TextMutedBrush}"/>
+                                                                                                        </Border>
+                                                                                                        <ControlTemplate.Triggers>
+ <Trigger Property="IsMouseOver"
+ Value="True">
+ <Setter TargetName="Bd"
+ Property="Background"
+ Value="{StaticResource DangerBrush}"/>
+ <Setter TargetName="Bd"
+ Property="BorderBrush"
+ Value="{StaticResource DangerBrush}"/>
+ <Setter TargetName="Tx"
+ Property="Foreground"
+ Value="White"/>
+ </Trigger>
+ <Trigger Property="IsPressed"
+ Value="True">
+ <Setter TargetName="Bd"
+ Property="Background"
+ Value="{StaticResource DangerHoverBrush}"/>
+ <Setter TargetName="Bd"
+ Property="BorderBrush"
+ Value="{StaticResource DangerHoverBrush}"/>
+ </Trigger>
+                                                                                                        </ControlTemplate.Triggers>
+                                                                                                </ControlTemplate>
+                                                                                        </Button.Template>
+                                                                                </Button>
+                                                                        </Grid>
                                                                 </Border>
                                                         </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -353,6 +442,15 @@
                                                                                    FontWeight="SemiBold"
                                                                                    Foreground="{StaticResource TextPrimaryBrush}"/>
                                                                 </StackPanel>
+                                                                <!-- 项目名称（只读：项目名即数据库名与资源目录名，重命名需后端支持） -->
+                                                                <TextBlock Text="项目名称"
+                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                <hc:TextBox Text="{Binding FormName, Mode=OneWay}"
+                                                                            IsReadOnly="True"
+                                                                            Background="{StaticResource PageBgBrush}"
+                                                                            Margin="0,0,0,12"
+                                                                            ToolTip="项目名即数据库名与资源目录名，暂不支持重命名"/>
+
                                                                 <Grid>
                                                                         <Grid.ColumnDefinitions>
                                                                                 <ColumnDefinition Width="*"/>
@@ -394,7 +492,7 @@
                                                                                               BorderBrush="{StaticResource BorderBrush}"
                                                                                               BorderThickness="1"
                                                                                               Background="{StaticResource CardBgBrush}"
-                                                                                              HorizontalContentAlignment="Left"
+                                                                                              HorizontalContentAlignment="Stretch"
                                                                                               Padding="10,0"
                                                                                               IsChecked="{Binding IsPlatformOpen, Mode=TwoWay}">
                                                                                         <Grid>
@@ -407,7 +505,7 @@
                                                                                                       Fill="{StaticResource TextMutedBrush}"
                                                                                                       HorizontalAlignment="Right"
                                                                                                       VerticalAlignment="Center"
-                                                                                                      Margin="0,0,8,0"/>
+                                                                                                      Margin="0,0,0,0"/>
                                                                                         </Grid>
                                                                                 </ToggleButton>
                                                                                 <Popup IsOpen="{Binding IsPlatformOpen, Mode=TwoWay}"
@@ -445,7 +543,7 @@
                                                                                               BorderBrush="{StaticResource BorderBrush}"
                                                                                               BorderThickness="1"
                                                                                               Background="{StaticResource CardBgBrush}"
-                                                                                              HorizontalContentAlignment="Left"
+                                                                                              HorizontalContentAlignment="Stretch"
                                                                                               Padding="10,0"
                                                                                               IsChecked="{Binding IsGenreOpen, Mode=TwoWay}">
                                                                                         <Grid>
@@ -458,7 +556,7 @@
                                                                                                       Fill="{StaticResource TextMutedBrush}"
                                                                                                       HorizontalAlignment="Right"
                                                                                                       VerticalAlignment="Center"
-                                                                                                      Margin="0,0,8,0"/>
+                                                                                                      Margin="0,0,0,0"/>
                                                                                         </Grid>
                                                                                 </ToggleButton>
                                                                                 <Popup IsOpen="{Binding IsGenreOpen, Mode=TwoWay}"
@@ -560,6 +658,107 @@
                                                                             VerticalScrollBarVisibility="Auto"
                                                                             VerticalContentAlignment="Top"
                                                                             hc:InfoElement.Placeholder="成片交付要求（分辨率 / 格式 / 时长 / 平台规范等）"/>
+                                                        </StackPanel>
+
+                                                        <!-- 规格设置 -->
+                                                        <StackPanel Margin="0,0,0,20">
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Margin="0,0,0,14">
+                                                                        <Border Width="3"
+                                                                                Height="14"
+                                                                                CornerRadius="2"
+                                                                                Background="{StaticResource PrimaryBrush}"
+                                                                                VerticalAlignment="Center"
+                                                                                Margin="0,0,8,0"/>
+                                                                        <TextBlock Text="规格设置"
+                                                                                   FontSize="14"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                </StackPanel>
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="总集数"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:TextBox Text="{Binding FormTotalEpisodes, UpdateSourceTrigger=PropertyChanged}"
+                                                                                            hc:InfoElement.Placeholder="如 20"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="每集时长（秒）"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <hc:TextBox Text="{Binding FormEpisodeDuration, UpdateSourceTrigger=PropertyChanged}"
+                                                                                            hc:InfoElement.Placeholder="如 120"/>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="4">
+                                                                                <TextBlock Text="画幅"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <ComboBox ItemsSource="{Binding AspectRatios}"
+                                                                                          SelectedItem="{Binding FormAspectRatio}"
+                                                                                          FontSize="13">
+                                                                                        <ComboBox.ItemTemplate>
+                                                                                                <DataTemplate>
+                                                                                                        <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                                                                                                </DataTemplate>
+                                                                                        </ComboBox.ItemTemplate>
+                                                                                </ComboBox>
+                                                                        </StackPanel>
+                                                                </Grid>
+                                                        </StackPanel>
+
+                                                        <!-- 进度与状态 -->
+                                                        <StackPanel>
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Margin="0,0,0,14">
+                                                                        <Border Width="3"
+                                                                                Height="14"
+                                                                                CornerRadius="2"
+                                                                                Background="{StaticResource PrimaryBrush}"
+                                                                                VerticalAlignment="Center"
+                                                                                Margin="0,0,8,0"/>
+                                                                        <TextBlock Text="进度与状态"
+                                                                                   FontSize="14"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                </StackPanel>
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="16"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0">
+                                                                                <TextBlock Text="当前环节"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <ComboBox ItemsSource="{Binding StageOptions}"
+                                                                                          SelectedItem="{Binding FormCurrentStage}"
+                                                                                          FontSize="13">
+                                                                                        <ComboBox.ItemTemplate>
+                                                                                                <DataTemplate>
+                                                                                                        <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                                                                                                </DataTemplate>
+                                                                                        </ComboBox.ItemTemplate>
+                                                                                </ComboBox>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2">
+                                                                                <TextBlock Text="项目状态"
+                                                                                           Style="{StaticResource FieldLabel}"/>
+                                                                                <ComboBox ItemsSource="{Binding StatusOptions}"
+                                                                                          SelectedItem="{Binding FormStatus}"
+                                                                                          FontSize="13">
+                                                                                        <ComboBox.ItemTemplate>
+                                                                                                <DataTemplate>
+                                                                                                        <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                                                                                                </DataTemplate>
+                                                                                        </ComboBox.ItemTemplate>
+                                                                                </ComboBox>
+                                                                        </StackPanel>
+                                                                </Grid>
                                                         </StackPanel>
                                                 </StackPanel>
                                         </ScrollViewer>
